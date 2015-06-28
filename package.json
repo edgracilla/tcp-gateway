@@ -1,0 +1,8 @@
+{
+  "name": "tcp-endpoint",
+  "version": "0.0.1",
+  "dependencies": {
+    "ip": "^0.3.3",
+    "lodash": "^3.9.3"
+  }
+}

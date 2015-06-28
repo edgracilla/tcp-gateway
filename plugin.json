@@ -1,0 +1,11 @@
+{
+  "name": "tcp-endpoint",
+  "description": "An endpoint plugin for Reekoh which adds support for Vanilla TCP Protocol and assumes that data sent by the devices are in JSON format.",
+  "version": "0.0.1",
+  "options": [{
+	"name": "port",
+	"label": "Port",
+	"type": "Number",
+	"required": true
+  }]
+}
