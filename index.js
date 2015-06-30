@@ -97,7 +97,7 @@ exports.init = function (options, imports) {
 
 			process.send({
 				type: 'log',
-				message: message
+				message: message.message
 			});
 		}
 	});
