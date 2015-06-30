@@ -15,15 +15,31 @@ exports.init = function (options, imports) {
 	});
 
 	server.on('ready', function () {
-		// TODO: Send a 'listening' event to the parent process.
+
+		console.log('TCP Server now listening on '.concat(host).concat(':').concat(options.port));
+		process.send({
+			type: 'listening'
+		});
+
 	});
 
 	server.on('client_on', function (client) {
-		// TODO: Send a 'connection' event to the parent process.
+
+		server.send(client, 'CONNACK');
+
+		process.send({
+			type: 'connection',
+			client: client
+		});
+
 	});
 
 	server.on('client_off', function (client) {
-		// TODO: Send a 'disconnect' event to the parent process.
+
+		process.send({
+			type: 'disconnect',
+			client: client
+		});
 	});
 
 	server.on('data', function (client, rawData) {
@@ -36,15 +52,41 @@ exports.init = function (options, imports) {
 
 		taskQueue.send(payload);
 
-		// TODO: Send a 'log' event to the parent process to log the incoming data.
+		process.send({
+			type: 'log',
+			data: data
+		});
 	});
 
 	server.on('error', function (error) {
-		// TODO: Send a 'error' event to the parent process to log the error.
+
+		process.send({
+			type: 'error',
+			error: error
+		});
 	});
 
 	server.on('close', function () {
-		// TODO: Send a 'close' event to the parent process.
+
+		process.send({
+			type: 'close'
+		});
+	});
+
+	server.on('SIGTERM', function() {
+
+		process.send({
+			type: 'SIGTERM'
+		});
+		process.exit();
+	});
+
+	server.on('UncaughtException', function() {
+
+		process.send({
+			type: 'UncaughtException'
+		});
+
 	});
 
 	server.listen();
@@ -53,7 +95,10 @@ exports.init = function (options, imports) {
 		if (message.server === serverAddress && _.contains(_.keys(server.getClients()), message.client)) {
 			server.send(message.client, message.message);
 
-			// TODO: Send a 'log' event to the parent process to log the message sent to the device.
+			process.send({
+				type: 'log',
+				message: message.message
+			});
 		}
 	});
 };
