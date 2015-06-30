@@ -5,12 +5,12 @@ var _             = require('lodash'),
 	StringDecoder = require('string_decoder').StringDecoder,
 	decoder       = new StringDecoder('utf8');
 
-exports.init = function (endpointId, options, queues) {
-	var taskQueue = queues.taskQueue;
-	var messageQueue = queues.messageQueue;
+exports.init = function (options, imports) {
+	var taskQueue = imports.taskQueue;
+	var messageQueue = imports.messageQueue;
 
 	var serverAddress = host + '' + options.port;
-	var server = require('./lib')(options.port, host, {
+	var server = require('./server')(options.port, host, {
 		_keepaliveTimeout: 3600000
 	});
 
@@ -29,7 +29,6 @@ exports.init = function (endpointId, options, queues) {
 	server.on('data', function (client, rawData) {
 		var data = decoder.write(rawData);
 		var payload = {
-			endpoint: endpointId,
 			server: serverAddress,
 			client: client,
 			data: data
