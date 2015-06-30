@@ -97,7 +97,7 @@ Server.init = function (port, host, options) {
 	}, this);
 };
 
-Server.prototype.listen = function (callback) {
+Server.prototype.listen = function () {
 	this._server.listen(this._port, this._host);
 };
 
