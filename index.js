@@ -81,10 +81,10 @@ exports.init = function (options, imports) {
 		process.exit();
 	});
 
-	server.on('UncaughtException', function() {
+	server.on('uncaughtException', function() {
 
 		process.send({
-			type: 'UncaughtException'
+			type: 'uncaughtException'
 		});
 
 	});
