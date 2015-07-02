@@ -48,4 +48,4 @@ process.on('SIGKILL', function () {
 	});
 });
 
-module.exports = Core;
+module.exports = new Core();
