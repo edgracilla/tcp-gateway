@@ -4,6 +4,6 @@
   "main": "app.js",
   "dependencies": {
     "ip": "^0.3.3",
-    "lodash": "^3.9.3"
+    "lodash": "^3.10.0"
   }
 }
