@@ -16,30 +16,25 @@ core.on('ready', function (options, imports) {
 	});
 
 	server.on('ready', function () {
-
 		console.log('TCP Server now listening on '.concat(host).concat(':').concat(options.port));
 		process.send({
 			type: 'listening'
 		});
-
 	});
 
 	server.on('client_on', function (client) {
-
 		server.send(client, 'CONNACK');
 
 		process.send({
 			type: 'connection',
-			client: client
+			data: client
 		});
-
 	});
 
 	server.on('client_off', function (client) {
-
 		process.send({
 			type: 'disconnect',
-			client: client
+			data: client
 		});
 	});
 
@@ -55,39 +50,24 @@ core.on('ready', function (options, imports) {
 
 		process.send({
 			type: 'log',
-			data: data
+			data: {
+				title: 'Data Received',
+				description: data
+			}
 		});
 	});
 
 	server.on('error', function (error) {
-
 		process.send({
 			type: 'error',
-			error: error
+			data: error
 		});
 	});
 
 	server.on('close', function () {
-
 		process.send({
 			type: 'close'
 		});
-	});
-
-	server.on('SIGTERM', function () {
-
-		process.send({
-			type: 'SIGTERM'
-		});
-		process.exit();
-	});
-
-	server.on('uncaughtException', function () {
-
-		process.send({
-			type: 'uncaughtException'
-		});
-
 	});
 
 	server.listen();
@@ -98,7 +78,10 @@ core.on('ready', function (options, imports) {
 
 			process.send({
 				type: 'log',
-				message: message.message
+				data: {
+					title: 'Message Sent',
+					description: message.message
+				}
 			});
 		}
 	});
