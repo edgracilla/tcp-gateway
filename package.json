@@ -1,7 +1,7 @@
 {
   "name": "tcp-endpoint",
   "version": "0.0.1",
-  "main": "core.js",
+  "main": "app.js",
   "dependencies": {
     "ip": "^0.3.3",
     "lodash": "^3.9.3"

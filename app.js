@@ -4,12 +4,9 @@ var _             = require('lodash'),
 	host          = require('ip').address(),
 	StringDecoder = require('string_decoder').StringDecoder,
 	decoder       = new StringDecoder('utf8'),
-	core          = require('./core');
+	core          = require('./core')();
 
-core.on('ready', function (options, imports) {
-	var taskQueue = imports.taskQueue;
-	var messageQueue = imports.messageQueue;
-
+core.on('ready', function (options) {
 	var serverAddress = host + '' + options.port;
 	var server = require('./server')(options.port, host, {
 		_keepaliveTimeout: 3600000
@@ -40,27 +37,34 @@ core.on('ready', function (options, imports) {
 
 	server.on('data', function (client, rawData) {
 		var data = decoder.write(rawData);
-		var payload = {
-			server: serverAddress,
-			client: client,
-			data: data
-		};
 
-		taskQueue.send(payload);
+		process.send({
+			type: 'data',
+			data: {
+				server: serverAddress,
+				client: client,
+				data: data
+			}
+		});
 
 		process.send({
 			type: 'log',
 			data: {
-				title: 'Data Received',
+				title: 'Raw Data Received',
 				description: data
 			}
 		});
 	});
 
 	server.on('error', function (error) {
+		console.error('Server Error', error);
 		process.send({
 			type: 'error',
-			data: error
+			data: {
+				name: error.name,
+				message: error.message,
+				stack: error.stack
+			}
 		});
 	});
 
@@ -72,25 +76,34 @@ core.on('ready', function (options, imports) {
 
 	server.listen();
 
-	messageQueue.subscribe(function (message) {
-		if (message.server === serverAddress && _.contains(_.keys(server.getClients()), message.client)) {
-			server.send(message.client, message.message, false, function (error) {
-				if (error) {
-					process.send({
-						type: 'error',
-						data: error
-					});
-				}
-				else {
-					process.send({
-						type: 'log',
-						data: {
-							title: 'Message Sent',
-							description: message.message
-						}
-					});
-				}
-			});
+	process.on('message', function (m) {
+		if (m.type === 'message' && m.data.message) {
+			var message = m.data.message;
+
+			if (message.server === serverAddress && _.contains(_.keys(server.getClients()), message.client)) {
+				server.send(message.client, message.message, false, function (error) {
+					if (error) {
+						console.log('Message Error', error);
+						process.send({
+							type: 'error',
+							data: {
+								name: error.name,
+								message: error.message,
+								stack: error.stack
+							}
+						});
+					}
+					else {
+						process.send({
+							type: 'log',
+							data: {
+								title: 'Message Sent',
+								description: message.message
+							}
+						});
+					}
+				});
+			}
 		}
 	});
 });

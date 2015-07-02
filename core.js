@@ -19,14 +19,19 @@ Core.init = function () {
 
 	process.on('message', function (event, data) {
 		if (event === 'ready')
-			self.emit('ready', data.options, data.imports);
+			self.emit('ready', data.options);
 	});
 };
 
 process.on('uncaughtException', function (error) {
+	console.error('Uncaught Exception', error);
 	process.send({
 		type: 'error',
-		data: error
+		data: {
+			name: error.name,
+			message: error.message,
+			stack: error.stack
+		}
 	});
 });
 
@@ -42,10 +47,4 @@ process.on('SIGTERM', function () {
 	});
 });
 
-process.on('SIGKILL', function () {
-	process.send({
-		type: 'kill'
-	});
-});
-
-module.exports = new Core();
+module.exports = Core;
