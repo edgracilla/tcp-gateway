@@ -23,4 +23,29 @@ Core.init = function () {
 	});
 };
 
+process.on('uncaughtException', function (error) {
+	process.send({
+		type: 'error',
+		data: error
+	});
+});
+
+process.on('exit', function () {
+	process.send({
+		type: 'exit'
+	});
+});
+
+process.on('SIGTERM', function () {
+	process.send({
+		type: 'terminate'
+	});
+});
+
+process.on('SIGKILL', function () {
+	process.send({
+		type: 'kill'
+	});
+});
+
 module.exports = Core;
