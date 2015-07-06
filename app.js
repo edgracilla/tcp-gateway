@@ -57,7 +57,7 @@ endpoint.on('ready', function (options) {
 		if (message.server === serverAddress && _.contains(_.keys(server.getClients()), message.client)) {
 			server.send(message.client, message.message, false, function (error) {
 				if (error) {
-					console.log('Message Error', error);
+					console.log('Message Sending Error', error);
 					endpoint.sendError(error);
 				}
 				else
@@ -68,7 +68,7 @@ endpoint.on('ready', function (options) {
 			server.getClients().forEach(function (client) {
 				server.send(client, message.message, false, function (error) {
 					if (error) {
-						console.log('Message Error', error);
+						console.log('Message Sending Error', error);
 						endpoint.sendError(error);
 					}
 					else
