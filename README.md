@@ -8,5 +8,6 @@
 Vanilla TCP Endpoint Adapter for the Reekoh Platform.
 
 **Assumptions:**
+
 1. Devices connect to the internet via TCP.
 2. Devices send data in JSON format.
