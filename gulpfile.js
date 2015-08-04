@@ -1,27 +1,30 @@
 'use strict';
 
-var gulp     = require('gulp'),
-	jshint   = require('gulp-jshint'),
-	jsonlint = require('gulp-jsonlint');
+var gulp       = require('gulp'),
+	plumber    = require('gulp-plumber'),
+	jshint     = require('gulp-jshint'),
+	jsonlint   = require('gulp-jsonlint');
 
-var watchFiles = {
-	jsFiles: ['./*.js'],
-	jsonFiles: ['./*.json']
+var paths = {
+	js: ['*.js', '*/*.js', '*/**/*.js', '!node_modules/**'],
+	json: ['*.json', '*/*.json', '*/**/*.json', '!node_modules/**']
 };
 
-gulp.task('jshint', function () {
-	return gulp.src(watchFiles.jsFiles)
+gulp.task('jslint', function () {
+	return gulp.src(paths.js)
+		.pipe(plumber())
 		.pipe(jshint())
-		.pipe(jshint.reporter('default', {verbose: true}))
+		.pipe(jshint.reporter('default'))
 		.pipe(jshint.reporter('fail'));
 });
 
 gulp.task('jsonlint', function () {
-	return gulp.src(watchFiles.jsonFiles)
+	return gulp.src(paths.json)
+		.pipe(plumber())
 		.pipe(jsonlint())
-		.pipe(jsonlint.reporter());
+		.pipe(jsonlint.reporter())
+		.pipe(jsonlint.failOnError());
 });
 
-gulp.task('lint', ['jshint', 'jsonlint']);
-
+gulp.task('lint', ['jslint', 'jsonlint']);
 gulp.task('test', ['lint']);

@@ -7,12 +7,14 @@
   },
   "dependencies": {
     "ip": "^0.3.3",
-    "lodash": "^3.10.0"
+    "lodash": "^3.10.1",
+    "safe-json-parse": "^4.0.0"
   },
   "devDependencies": {
     "gulp": "^3.9.0",
-    "gulp-cli": "^0.2.0",
+    "gulp-cli": "^0.3.0",
     "gulp-jshint": "^1.11.2",
-    "gulp-jsonlint": "^1.1.0"
+    "gulp-jsonlint": "^1.1.0",
+    "gulp-plumber": "^1.0.1"
   }
 }

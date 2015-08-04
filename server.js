@@ -46,7 +46,7 @@ Server.init = function (port, host, options) {
 		}
 
 		function data(_data) {
-			self.emit('data', client, _data);
+			self.emit('data', client, _data, socket.bytesRead);
 		}
 
 		function timeout() {
