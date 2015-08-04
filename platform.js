@@ -3,18 +3,18 @@
 var inherits     = require('util').inherits,
 	EventEmitter = require('events').EventEmitter;
 
-function Endpoint() {
-	if (!(this instanceof Endpoint)) {
-		return new Endpoint();
+function Platform() {
+	if (!(this instanceof Platform)) {
+		return new Platform();
 	}
 
 	EventEmitter.call(this);
-	Endpoint.init.call(this);
+	Platform.init.call(this);
 }
 
-inherits(Endpoint, EventEmitter);
+inherits(Platform, EventEmitter);
 
-Endpoint.init = function () {
+Platform.init = function () {
 	var self = this;
 
 	process.on('message', function (m) {
@@ -25,29 +25,31 @@ Endpoint.init = function () {
 	});
 };
 
-Endpoint.prototype.sendListeningState = function() {
+Platform.prototype.sendListeningState = function() {
 	process.send({
 		type: 'listening'
 	});
 };
 
-Endpoint.prototype.sendConnection = function(clientAddress) {
+Platform.prototype.sendConnection = function(clientAddress) {
 	process.send({
 		type: 'connection',
 		data: clientAddress
 	});
 };
 
-Endpoint.prototype.sendDisconnect = function(clientAddress) {
+Platform.prototype.sendDisconnect = function(clientAddress) {
 	process.send({
 		type: 'disconnect',
 		data: clientAddress
 	});
 };
 
-Endpoint.prototype.sendData = function(serverAddress, client, data) {
+Platform.prototype.sendData = function(serverAddress, client, data, dataType, size) {
 	process.send({
 		type: 'data',
+		size: size,
+		dataType: dataType,
 		data: {
 			server: serverAddress,
 			client: client,
@@ -56,7 +58,7 @@ Endpoint.prototype.sendData = function(serverAddress, client, data) {
 	});
 };
 
-Endpoint.prototype.sendLog = function(title, description) {
+Platform.prototype.sendLog = function(title, description) {
 	process.send({
 		type: 'log',
 		data: {
@@ -66,7 +68,7 @@ Endpoint.prototype.sendLog = function(title, description) {
 	});
 };
 
-Endpoint.prototype.sendError = function(error) {
+Platform.prototype.sendError = function(error) {
 	process.send({
 		type: 'error',
 		data: {
@@ -77,7 +79,7 @@ Endpoint.prototype.sendError = function(error) {
 	});
 };
 
-Endpoint.prototype.sendClose = function() {
+Platform.prototype.sendClose = function() {
 	process.send({
 		type: 'close'
 	});
@@ -107,4 +109,4 @@ process.on('SIGTERM', function () {
 	});
 });
 
-module.exports = Endpoint;
+module.exports = new Platform();
