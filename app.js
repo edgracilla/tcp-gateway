@@ -12,7 +12,7 @@ platform.on('ready', function (options) {
 	var host          = require('ip').address(),
 		StringDecoder = require('string_decoder').StringDecoder,
 		decoder       = new StringDecoder('utf8'),
-		safeParse = require('safe-json-parse/callback');
+		safeParse     = require('safe-json-parse/callback');
 
 	serverAddress = host + '' + options.port;
 
@@ -22,16 +22,16 @@ platform.on('ready', function (options) {
 
 	server.on('ready', function () {
 		console.log('TCP Server now listening on '.concat(host).concat(':').concat(options.port));
-		platform.sendListeningState();
+		platform.notifyListen();
 	});
 
 	server.on('client_on', function (clientAddress) {
 		server.send(clientAddress, 'CONNACK');
-		platform.sendConnection(clientAddress);
+		platform.notifyConnection(clientAddress);
 	});
 
 	server.on('client_off', function (clientAddress) {
-		platform.sendDisconnect(clientAddress);
+		platform.notifyDisconnection(clientAddress);
 	});
 
 	server.on('data', function (clientAddress, rawData, size) {
@@ -39,21 +39,21 @@ platform.on('ready', function (options) {
 
 		safeParse(data, function (error, result) {
 			if (error)
-				platform.sendError(error);
+				platform.handleException(error);
 			else
-				platform.sendData(serverAddress, clientAddress, result, DATA_TYPE, size);
+				platform.processData(serverAddress, clientAddress, result, DATA_TYPE, size);
 		});
 
-		platform.sendLog('Raw Data Received', data);
+		platform.log('Raw Data Received', data);
 	});
 
 	server.on('error', function (error) {
 		console.error('Server Error', error);
-		platform.sendError(error);
+		platform.handleException(error);
 	});
 
 	server.on('close', function () {
-		platform.sendClose();
+		platform.notifyClose();
 	});
 
 	server.listen();
@@ -69,10 +69,10 @@ platform.on('message', function (message) {
 		server.send(message.client, message.message, false, function (error) {
 			if (error) {
 				console.log('Message Sending Error', error);
-				platform.sendError(error);
+				platform.handleException(error);
 			}
 			else
-				platform.sendLog('Message Sent', message.message);
+				platform.log('Message Sent', message.message);
 		});
 	}
 	else if (message.client === '*') {
@@ -80,10 +80,10 @@ platform.on('message', function (message) {
 			server.send(client, message.message, false, function (error) {
 				if (error) {
 					console.log('Message Sending Error', error);
-					platform.sendError(error);
+					platform.handleException(error);
 				}
 				else
-					platform.sendLog('Message Sent', message.message);
+					platform.log('Message Sent', message.message);
 			});
 		});
 	}
