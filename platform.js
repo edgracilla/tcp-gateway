@@ -8,6 +8,26 @@ function Platform() {
 		return new Platform();
 	}
 
+	var self = this;
+	var _notifyExit = function () {
+		process.send({
+			type: 'exit'
+		});
+	};
+
+	process.on('uncaughtException', function (error) {
+		console.error('Uncaught Exception', error);
+		self.handleException(error);
+	});
+
+	process.on('exit', function () {
+		_notifyExit();
+	});
+
+	process.on('SIGTERM', function () {
+		_notifyExit();
+	});
+
 	EventEmitter.call(this);
 	Platform.init.call(this);
 }
@@ -25,27 +45,33 @@ Platform.init = function () {
 	});
 };
 
-Platform.prototype.sendListeningState = function() {
+Platform.prototype.notifyListen = function () {
 	process.send({
 		type: 'listening'
 	});
 };
 
-Platform.prototype.sendConnection = function(clientAddress) {
+Platform.prototype.notifyConnection = function (clientAddress) {
 	process.send({
 		type: 'connection',
 		data: clientAddress
 	});
 };
 
-Platform.prototype.sendDisconnect = function(clientAddress) {
+Platform.prototype.notifyDisconnection = function (clientAddress) {
 	process.send({
 		type: 'disconnect',
 		data: clientAddress
 	});
 };
 
-Platform.prototype.sendData = function(serverAddress, client, data, dataType, size) {
+Platform.prototype.notifyClose = function () {
+	process.send({
+		type: 'close'
+	});
+};
+
+Platform.prototype.processData = function (serverAddress, client, data, dataType, size) {
 	process.send({
 		type: 'data',
 		size: size,
@@ -58,7 +84,7 @@ Platform.prototype.sendData = function(serverAddress, client, data, dataType, si
 	});
 };
 
-Platform.prototype.sendLog = function(title, description) {
+Platform.prototype.log = function (title, description) {
 	process.send({
 		type: 'log',
 		data: {
@@ -68,7 +94,9 @@ Platform.prototype.sendLog = function(title, description) {
 	});
 };
 
-Platform.prototype.sendError = function(error) {
+Platform.prototype.handleException = function (error) {
+	console.error(error);
+
 	process.send({
 		type: 'error',
 		data: {
@@ -78,35 +106,5 @@ Platform.prototype.sendError = function(error) {
 		}
 	});
 };
-
-Platform.prototype.sendClose = function() {
-	process.send({
-		type: 'close'
-	});
-};
-
-process.on('uncaughtException', function (error) {
-	console.error('Uncaught Exception', error);
-	process.send({
-		type: 'error',
-		data: {
-			name: error.name,
-			message: error.message,
-			stack: error.stack
-		}
-	});
-});
-
-process.on('exit', function () {
-	process.send({
-		type: 'exit'
-	});
-});
-
-process.on('SIGTERM', function () {
-	process.send({
-		type: 'terminate'
-	});
-});
 
 module.exports = new Platform();
