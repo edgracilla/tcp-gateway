@@ -42,7 +42,7 @@ platform.on('ready', function (options) {
 				platform.handleException(error);
 			else {
 				// Send the JSON String data not the parsed data.
-				platform.processData(serverAddress, clientAddress, result, DATA_TYPE, size);
+				platform.processData(serverAddress, clientAddress, data, DATA_TYPE, size);
 			}
 		});
 
