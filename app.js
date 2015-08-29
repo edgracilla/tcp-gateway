@@ -1,7 +1,5 @@
 'use strict';
 
-var DATA_TYPE = 'application/json';
-
 var server, serverAddress,
 	platform = require('./platform');
 
@@ -12,7 +10,7 @@ platform.on('ready', function (options) {
 	var host          = require('ip').address(),
 		StringDecoder = require('string_decoder').StringDecoder,
 		decoder       = new StringDecoder('utf8'),
-		safeParse     = require('safe-json-parse/callback');
+		isJSON        = require('is-json');
 
 	serverAddress = host + '' + options.port;
 
@@ -27,24 +25,19 @@ platform.on('ready', function (options) {
 
 	server.on('client_on', function (clientAddress) {
 		server.send(clientAddress, 'CONNACK');
-		platform.notifyConnection(clientAddress);
+		platform.notifyConnection(serverAddress, clientAddress);
 	});
 
 	server.on('client_off', function (clientAddress) {
-		platform.notifyDisconnection(clientAddress);
+		platform.notifyDisconnection(serverAddress, clientAddress);
 	});
 
-	server.on('data', function (clientAddress, rawData, size) {
+	server.on('data', function (clientAddress, rawData) {
 		var data = decoder.write(rawData);
 
-		safeParse(data, function (error, result) {
-			if (error)
-				platform.handleException(error);
-			else {
-				// Send the JSON String data not the parsed data.
-				platform.processData(serverAddress, clientAddress, data, DATA_TYPE, size);
-			}
-		});
+		// Verify that the incoming data is a valid JSON String. Reekoh only accepts JSON as input.
+		if (isJSON(data))
+			platform.processData(serverAddress, clientAddress, data);
 
 		platform.log('Raw Data Received', data);
 	});

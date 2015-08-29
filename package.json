@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "ip": "^0.3.3",
-    "lodash": "^3.10.1",
-    "safe-json-parse": "^4.0.0"
+    "is-json": "^1.2.5",
+    "lodash": "^3.10.1"
   },
   "devDependencies": {
     "gulp": "^3.9.0",
