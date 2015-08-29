@@ -51,17 +51,23 @@ Platform.prototype.notifyListen = function () {
 	});
 };
 
-Platform.prototype.notifyConnection = function (clientAddress) {
+Platform.prototype.notifyConnection = function (serverAddress, clientAddress) {
 	process.send({
 		type: 'connection',
-		data: clientAddress
+		data: {
+			server: serverAddress,
+			client: clientAddress,
+		}
 	});
 };
 
-Platform.prototype.notifyDisconnection = function (clientAddress) {
+Platform.prototype.notifyDisconnection = function (serverAddress, clientAddress) {
 	process.send({
 		type: 'disconnect',
-		data: clientAddress
+		data: {
+			server: serverAddress,
+			client: clientAddress
+		}
 	});
 };
 
@@ -71,14 +77,12 @@ Platform.prototype.notifyClose = function () {
 	});
 };
 
-Platform.prototype.processData = function (serverAddress, client, data, dataType, size) {
+Platform.prototype.processData = function (serverAddress, clientAddress, data) {
 	process.send({
 		type: 'data',
-		size: size,
-		dataType: dataType,
 		data: {
 			server: serverAddress,
-			client: client,
+			client: clientAddress,
 			data: data
 		}
 	});
