@@ -4,28 +4,14 @@ var inherits     = require('util').inherits,
 	EventEmitter = require('events').EventEmitter;
 
 function Platform() {
-	if (!(this instanceof Platform)) {
-		return new Platform();
-	}
+	if (!(this instanceof Platform)) return new Platform();
 
 	var self = this;
-	var _notifyExit = function () {
-		process.send({
-			type: 'exit'
-		});
-	};
 
 	process.on('uncaughtException', function (error) {
-		console.error('Uncaught Exception', error);
+		console.error(error);
 		self.handleException(error);
-	});
-
-	process.on('exit', function () {
-		_notifyExit();
-	});
-
-	process.on('SIGTERM', function () {
-		_notifyExit();
+		process.exit(1);
 	});
 
 	EventEmitter.call(this);
@@ -45,69 +31,113 @@ Platform.init = function () {
 	});
 };
 
-Platform.prototype.notifyListen = function () {
-	process.send({
-		type: 'listening'
+Platform.prototype.notifyListen = function (callback) {
+	setImmediate(function () {
+		callback = callback || function () {};
+
+		process.send({
+			type: 'listening'
+		});
+
+		callback();
 	});
 };
 
-Platform.prototype.notifyConnection = function (serverAddress, clientAddress) {
-	process.send({
-		type: 'connection',
-		data: {
-			server: serverAddress,
-			client: clientAddress,
-		}
+Platform.prototype.notifyConnection = function (clientAddress, callback) {
+	setImmediate(function () {
+		callback = callback || function () {};
+
+		if (!clientAddress) return callback(new Error('Client IP address is required.'));
+
+		process.send({
+			type: 'connection',
+			data: clientAddress
+		});
+
+		callback();
 	});
 };
 
-Platform.prototype.notifyDisconnection = function (serverAddress, clientAddress) {
-	process.send({
-		type: 'disconnect',
-		data: {
-			server: serverAddress,
-			client: clientAddress
-		}
+Platform.prototype.notifyDisconnection = function (clientAddress, callback) {
+	setImmediate(function () {
+		callback = callback || function () {};
+
+		if (!clientAddress) return callback(new Error('Client IP address is required.'));
+
+		process.send({
+			type: 'disconnect',
+			data: clientAddress
+		});
+
+		callback();
 	});
 };
 
-Platform.prototype.notifyClose = function () {
-	process.send({
-		type: 'close'
+Platform.prototype.notifyClose = function (callback) {
+	setImmediate(function () {
+		callback = callback || function () {};
+
+		process.send({
+			type: 'close'
+		});
+
+		callback();
 	});
 };
 
-Platform.prototype.processData = function (serverAddress, clientAddress, data) {
-	process.send({
-		type: 'data',
-		data: {
-			server: serverAddress,
-			client: clientAddress,
-			data: data
-		}
+Platform.prototype.processData = function (clientAddress, data, callback) {
+	setImmediate(function () {
+		callback = callback || function () {};
+
+		if (!clientAddress) return callback(new Error('Client IP address is required.'));
+		if (!data) return callback(new Error('Data is required.'));
+
+		process.send({
+			type: 'data',
+			data: {
+				client: clientAddress,
+				data: data
+			}
+		});
+
+		callback();
 	});
 };
 
-Platform.prototype.log = function (title, description) {
-	process.send({
-		type: 'log',
-		data: {
-			title: title,
-			description: description
-		}
+Platform.prototype.log = function (title, description, callback) {
+	setImmediate(function () {
+		callback = callback || function () {};
+
+		if (!title) return callback(new Error('Log title is required.'));
+
+		process.send({
+			type: 'log',
+			data: {
+				title: title,
+				description: description
+			}
+		});
+
+		callback();
 	});
 };
 
-Platform.prototype.handleException = function (error) {
-	console.error(error);
+Platform.prototype.handleException = function (error, callback) {
+	setImmediate(function () {
+		callback = callback || function () {};
 
-	process.send({
-		type: 'error',
-		data: {
-			name: error.name,
-			message: error.message,
-			stack: error.stack
-		}
+		if (!error) return callback(new Error('Error is required.'));
+
+		console.error(error);
+
+		process.send({
+			type: 'error',
+			data: {
+				name: error.name,
+				message: error.message,
+				stack: error.stack
+			}
+		});
 	});
 };
 
