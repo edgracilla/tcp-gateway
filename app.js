@@ -6,7 +6,7 @@ var server, serverAddress,
 /*
  * Listen for the ready event.
  */
-platform.on('ready', function (options) {
+platform.once('ready', function (options) {
 	var host          = require('ip').address(),
 		StringDecoder = require('string_decoder').StringDecoder,
 		decoder       = new StringDecoder('utf8'),
