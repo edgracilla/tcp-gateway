@@ -20,7 +20,7 @@ platform.once('ready', function (options) {
 
 	server.on('ready', function () {
 		console.log('TCP Server now listening on '.concat(host).concat(':').concat(options.port));
-		platform.notifyListen();
+		platform.notifyReady();
 	});
 
 	server.on('client_on', function (clientAddress) {
@@ -60,26 +60,17 @@ platform.once('ready', function (options) {
 platform.on('message', function (message) {
 	var _ = require('lodash');
 
-	if (message.server === serverAddress && _.contains(_.keys(server.getClients()), message.client)) {
+	if (_.contains(_.keys(server.getClients()), message.client)) {
 		server.send(message.client, message.message, false, function (error) {
 			if (error) {
-				console.log('Message Sending Error', error);
+				console.error('Message Sending Error', error);
+				platform.sendMessageResponse(message.messageId, error.name);
 				platform.handleException(error);
 			}
-			else
+			else {
+				platform.sendMessageResponse(message.messageId, 'Message Sent');
 				platform.log('Message Sent', message.message);
-		});
-	}
-	else if (message.client === '*') {
-		server.getClients().forEach(function (client) {
-			server.send(client, message.message, false, function (error) {
-				if (error) {
-					console.log('Message Sending Error', error);
-					platform.handleException(error);
-				}
-				else
-					platform.log('Message Sent', message.message);
-			});
+			}
 		});
 	}
 });
