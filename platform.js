@@ -4,7 +4,7 @@ var inherits     = require('util').inherits,
 	EventEmitter = require('events').EventEmitter;
 
 var isString = function (val) {
-	return (!!val && typeof val === 'object') && Object.prototype.toString.call(val) === '[object String]';
+	return typeof val === 'string' || ((!!val && typeof val === 'object') && Object.prototype.toString.call(val) === '[object String]');
 };
 
 function Platform() {
