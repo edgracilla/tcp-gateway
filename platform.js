@@ -4,7 +4,7 @@ var inherits     = require('util').inherits,
 	EventEmitter = require('events').EventEmitter;
 
 var isString = function (val) {
-	return typeof val === 'string' || ((!!val && typeof val === 'object') && Object.prototype.toString.call(val) === '[object String]');
+	return (!!val && typeof val === 'object') && Object.prototype.toString.call(val) === '[object String]';
 };
 
 function Platform() {
@@ -13,7 +13,6 @@ function Platform() {
 	var self = this;
 
 	process.on('uncaughtException', function (error) {
-		console.error(error);
 		self.handleException(error);
 		process.exit(1);
 	});
@@ -36,10 +35,10 @@ Platform.init = function () {
 };
 
 Platform.prototype.notifyReady = function (callback) {
-	setImmediate(function () {
-		callback = callback || function () {
-			};
+	callback = callback || function () {
+		};
 
+	setImmediate(function () {
 		process.send({
 			type: 'ready'
 		});
@@ -48,32 +47,32 @@ Platform.prototype.notifyReady = function (callback) {
 	});
 };
 
-Platform.prototype.notifyConnection = function (clientAddress, callback) {
-	setImmediate(function () {
-		callback = callback || function () {
-			};
+Platform.prototype.notifyConnection = function (clientId, callback) {
+	callback = callback || function () {
+		};
 
-		if (!clientAddress || !isString(clientAddress)) return callback(new Error('A valid client IP address is required.'));
+	setImmediate(function () {
+		if (!clientId || !isString(clientId)) return callback(new Error('A valid client identifier is required.'));
 
 		process.send({
 			type: 'connection',
-			data: clientAddress
+			data: clientId
 		});
 
 		callback();
 	});
 };
 
-Platform.prototype.notifyDisconnection = function (clientAddress, callback) {
-	setImmediate(function () {
-		callback = callback || function () {
-			};
+Platform.prototype.notifyDisconnection = function (clientId, callback) {
+	callback = callback || function () {
+		};
 
-		if (!clientAddress || !isString(clientAddress)) return callback(new Error('A valid client IP address is required.'));
+	setImmediate(function () {
+		if (!clientId || !isString(clientId)) return callback(new Error('A valid client identifier is required.'));
 
 		process.send({
 			type: 'disconnect',
-			data: clientAddress
+			data: clientId
 		});
 
 		callback();
@@ -81,10 +80,10 @@ Platform.prototype.notifyDisconnection = function (clientAddress, callback) {
 };
 
 Platform.prototype.notifyClose = function (callback) {
-	setImmediate(function () {
-		callback = callback || function () {
-			};
+	callback = callback || function () {
+		};
 
+	setImmediate(function () {
 		process.send({
 			type: 'close'
 		});
@@ -93,18 +92,20 @@ Platform.prototype.notifyClose = function (callback) {
 	});
 };
 
-Platform.prototype.processData = function (clientAddress, data, callback) {
-	setImmediate(function () {
-		callback = callback || function () {
-			};
+Platform.prototype.processData = function (device, clientId, data, callback) {
+	callback = callback || function () {
+		};
 
-		if (!clientAddress || !isString(clientAddress)) return callback(new Error('A valid client IP address is required.'));
+	setImmediate(function () {
+		if (!device || !isString(device)) return callback(new Error('A valid device id is required.'));
+		if (!clientId || !isString(clientId)) return callback(new Error('A valid client identifier is required.'));
 		if (!data || !isString(data)) return callback(new Error('A valid data is required.'));
 
 		process.send({
 			type: 'data',
 			data: {
-				client: clientAddress,
+				device: device,
+				client: clientId,
 				data: data
 			}
 		});
@@ -114,10 +115,10 @@ Platform.prototype.processData = function (clientAddress, data, callback) {
 };
 
 Platform.prototype.sendMessageResponse = function (messageId, response, callback) {
-	setImmediate(function () {
-		callback = callback || function () {
-			};
+	callback = callback || function () {
+		};
 
+	setImmediate(function () {
 		if (!messageId || !isString(messageId)) return callback(new Error('A valid message id is required.'));
 		if (!response || !isString(response)) return callback(new Error('A valid response is required.'));
 
@@ -134,10 +135,10 @@ Platform.prototype.sendMessageResponse = function (messageId, response, callback
 };
 
 Platform.prototype.sendMessageToDevice = function (device, message, callback) {
-	setImmediate(function () {
-		callback = callback || function () {
-			};
+	callback = callback || function () {
+		};
 
+	setImmediate(function () {
 		if (!device || !isString(device)) return callback(new Error('A valid device id is required.'));
 		if (!message || !isString(message)) return callback(new Error('A valid message is required.'));
 
@@ -154,10 +155,10 @@ Platform.prototype.sendMessageToDevice = function (device, message, callback) {
 };
 
 Platform.prototype.sendMessageToGroup = function (group, message, callback) {
-	setImmediate(function () {
-		callback = callback || function () {
-			};
+	callback = callback || function () {
+		};
 
+	setImmediate(function () {
 		if (!group || !isString(group)) return callback(new Error('A valid group id is required.'));
 		if (!message || !isString(message)) return callback(new Error('A valid message is required.'));
 
@@ -174,10 +175,10 @@ Platform.prototype.sendMessageToGroup = function (group, message, callback) {
 };
 
 Platform.prototype.log = function (title, description, callback) {
-	setImmediate(function () {
-		callback = callback || function () {
-			};
+	callback = callback || function () {
+		};
 
+	setImmediate(function () {
 		if (!title || !isString(title)) return callback(new Error('A valid log title is required.'));
 
 		process.send({
@@ -193,13 +194,11 @@ Platform.prototype.log = function (title, description, callback) {
 };
 
 Platform.prototype.handleException = function (error, callback) {
+	callback = callback || function () {
+		};
+
 	setImmediate(function () {
-		callback = callback || function () {
-			};
-
 		if (!error) return callback(new Error('Error is required.'));
-
-		console.error(error);
 
 		process.send({
 			type: 'error',
