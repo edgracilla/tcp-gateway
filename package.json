@@ -13,8 +13,7 @@
   },
   "dependencies": {
     "ip": "^0.3.3",
-    "is-json": "^1.2.5",
-    "lodash": "^3.10.1"
+    "is-json": "^1.2.5"
   },
   "devDependencies": {
     "gulp": "^3.9.0",

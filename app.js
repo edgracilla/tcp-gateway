@@ -1,7 +1,8 @@
 'use strict';
 
 var server, serverAddress,
-	platform = require('./platform');
+	platform  = require('./platform'),
+	TCPServer = require('./server');
 
 /*
  * Listen for the ready event.
@@ -14,7 +15,7 @@ platform.once('ready', function (options) {
 
 	serverAddress = host + '' + options.port;
 
-	server = require('./server')(options.port, host, {
+	server = new TCPServer({
 		_keepaliveTimeout: 3600000
 	});
 
@@ -25,19 +26,30 @@ platform.once('ready', function (options) {
 
 	server.on('client_on', function (clientAddress) {
 		server.send(clientAddress, 'CONNACK');
-		platform.notifyConnection(serverAddress, clientAddress);
+		platform.notifyConnection(clientAddress);
 	});
 
 	server.on('client_off', function (clientAddress) {
-		platform.notifyDisconnection(serverAddress, clientAddress);
+		platform.notifyDisconnection(clientAddress);
 	});
 
-	server.on('data', function (clientAddress, rawData) {
+	server.on('client_error', function (error) {
+		platform.handleException(error);
+	});
+
+	server.on('data', function (client, rawData) {
 		var data = decoder.write(rawData);
 
-		// Verify that the incoming data is a valid JSON String. Reekoh only accepts JSON as input.
-		if (isJSON(data))
-			platform.processData(serverAddress, clientAddress, data);
+		if (isJSON(data)) {
+			var obj = JSON.parse(data);
+
+			if (obj.type === 'data')
+				platform.processData(obj.device, client, obj.data);
+			else if (obj.type === 'message')
+				platform.sendMessageToDevice(obj.target, obj.message);
+			else if (obj.type === 'groupmessage')
+				platform.sendMessageToGroup(obj.target, obj.message);
+		}
 
 		platform.log('Raw Data Received', data);
 	});
@@ -51,16 +63,14 @@ platform.once('ready', function (options) {
 		platform.notifyClose();
 	});
 
-	server.listen();
+	server.listen(options.port, host);
 });
 
 /*
  * Listen for the message event. Send these messages/commands to devices from this server.
  */
 platform.on('message', function (message) {
-	var _ = require('lodash');
-
-	if (_.contains(_.keys(server.getClients()), message.client)) {
+	if (server.getClients()[message.client]) {
 		server.send(message.client, message.message, false, function (error) {
 			if (error) {
 				console.error('Message Sending Error', error);
