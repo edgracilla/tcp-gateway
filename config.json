@@ -1,8 +1,1 @@
-[
-  {
-	"name": "port",
-	"label": "Port",
-	"type": "Number",
-	"required": true
-  }
-]
+[]

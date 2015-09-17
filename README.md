@@ -1,11 +1,11 @@
-# TCP Endpoint
+# TCP Gateway
 
-[![Build Status](https://travis-ci.org/Reekoh/tcp-endpoint.svg)](https://travis-ci.org/Reekoh/tcp-endpoint)
-![Dependencies](https://img.shields.io/david/Reekoh/tcp-endpoint.svg)
-![Dependencies](https://img.shields.io/david/dev/Reekoh/tcp-endpoint.svg)
+[![Build Status](https://travis-ci.org/Reekoh/tcp-gateway.svg)](https://travis-ci.org/Reekoh/tcp-gateway)
+![Dependencies](https://img.shields.io/david/Reekoh/tcp-gateway.svg)
+![Dependencies](https://img.shields.io/david/dev/Reekoh/tcp-gateway.svg)
 ![Built With](https://img.shields.io/badge/built%20with-gulp-red.svg)
 
-JSON TCP Endpoint Plugin for the Reekoh IoT Platform.
+JSON TCP Gateway Plugin for the Reekoh IoT Platform.
 
 **Assumptions:**
 

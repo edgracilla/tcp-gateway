@@ -1,6 +1,6 @@
 {
-  "name": "tcp-endpoint",
-  "description": "JSON TCP Endpoint Plugin for the Reekoh IoT Platform.",
+  "name": "tcp-gateway",
+  "description": "JSON TCP Gateway Plugin for the Reekoh IoT Platform.",
   "version": "0.0.1",
   "author": "Reekoh, Inc.",
   "main": "app.js",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Reekoh/tcp-endpoint"
+    "url": "https://github.com/Reekoh/tcp-gateway"
   },
   "dependencies": {
     "ip": "^0.3.3",
