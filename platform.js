@@ -30,7 +30,7 @@ Platform.init = function () {
 		if (m.type === 'ready')
 			self.emit('ready', m.data.options);
 		else if (m.type === 'message')
-			self.emit('message', m.data.message);
+			self.emit('message', m.data);
 	});
 };
 

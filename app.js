@@ -5,6 +5,25 @@ var server, serverAddress,
 	TCPServer = require('./server');
 
 /*
+ * Listen for the message event. Send these messages/commands to devices from this server.
+ */
+platform.on('message', function (message) {
+	if (server.getClients()[message.client]) {
+		server.send(message.client, message.message, false, function (error) {
+			if (error) {
+				console.error('Message Sending Error', error);
+				platform.sendMessageResponse(message.messageId, error.name);
+				platform.handleException(error);
+			}
+			else {
+				platform.sendMessageResponse(message.messageId, 'Message Sent');
+				platform.log('Message Sent', message.message);
+			}
+		});
+	}
+});
+
+/*
  * Listen for the ready event.
  */
 platform.once('ready', function (options) {
@@ -19,7 +38,7 @@ platform.once('ready', function (options) {
 		_keepaliveTimeout: 3600000
 	});
 
-	server.on('ready', function () {
+	server.once('ready', function () {
 		console.log('TCP Server now listening on '.concat(host).concat(':').concat(options.port));
 		platform.notifyReady();
 	});
@@ -64,23 +83,4 @@ platform.once('ready', function (options) {
 	});
 
 	server.listen(options.port, host);
-});
-
-/*
- * Listen for the message event. Send these messages/commands to devices from this server.
- */
-platform.on('message', function (message) {
-	if (server.getClients()[message.client]) {
-		server.send(message.client, message.message, false, function (error) {
-			if (error) {
-				console.error('Message Sending Error', error);
-				platform.sendMessageResponse(message.messageId, error.name);
-				platform.handleException(error);
-			}
-			else {
-				platform.sendMessageResponse(message.messageId, 'Message Sent');
-				platform.log('Message Sent', message.message);
-			}
-		});
-	}
 });
