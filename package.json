@@ -12,14 +12,15 @@
     "url": "https://github.com/Reekoh/tcp-gateway"
   },
   "dependencies": {
-    "ip": "^0.3.3",
+    "ip": "^1.0.1",
     "is-json": "^1.2.5"
   },
   "devDependencies": {
     "gulp": "^3.9.0",
     "gulp-cli": "^0.3.0",
     "gulp-jshint": "^1.11.2",
-    "gulp-jsonlint": "^1.1.0",
+    "gulp-jsonlint": "^1.1.1",
+    "gulp-mocha": "^2.1.3",
     "gulp-plumber": "^1.0.1"
   }
 }

@@ -1,13 +1,15 @@
 'use strict';
 
-var gulp       = require('gulp'),
-	plumber    = require('gulp-plumber'),
-	jshint     = require('gulp-jshint'),
-	jsonlint   = require('gulp-jsonlint');
+var gulp     = require('gulp'),
+	mocha    = require('gulp-mocha'),
+	plumber  = require('gulp-plumber'),
+	jshint   = require('gulp-jshint'),
+	jsonlint = require('gulp-jsonlint');
 
 var paths = {
 	js: ['*.js', '*/*.js', '*/**/*.js', '!node_modules/**'],
-	json: ['*.json', '*/*.json', '*/**/*.json', '!node_modules/**']
+	json: ['*.json', '*/*.json', '*/**/*.json', '!node_modules/**'],
+	tests: ['./tests/*.js']
 };
 
 gulp.task('jslint', function () {
@@ -26,5 +28,22 @@ gulp.task('jsonlint', function () {
 		.pipe(jsonlint.failOnError());
 });
 
+gulp.task('run-tests', function () {
+	return gulp
+		.src(paths.tests, {
+			read: false
+		})
+		.pipe(mocha({
+			reporter: 'nyan'
+		}))
+		.once('error', function (error) {
+			console.error(error);
+			process.exit(1);
+		})
+		.once('end', function () {
+			process.exit();
+		});
+});
+
 gulp.task('lint', ['jslint', 'jsonlint']);
-gulp.task('test', ['lint']);
+gulp.task('test', ['lint', 'run-tests']);

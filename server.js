@@ -16,17 +16,17 @@ function Server(options) {
 inherits(Server, EventEmitter);
 
 Server.init = function (options) {
+	options = options || {};
 	var self = this;
 
 	self._clients = {};
-	self._timeout = (options && options.timeout) || 3600000;
-	self._keepalive = (options && options.keepalive) || true;
-	self._keepaliveTimeout = (options && options.keepaliveTimeout) || 60000;
+	self._timeout = options.timeout || 3600000;
+	self._keepalive = options.keepalive || true;
 
 	var handler = function (client) {
 		var clientAddress = client.remoteAddress + ':' + client.remotePort;
 
-		client.setKeepAlive(self._keepalive, self._keepaliveTimeout);
+		client.setKeepAlive(self._keepalive);
 		client.setTimeout(self._timeout);
 
 		if (options && options.readEncoding)
