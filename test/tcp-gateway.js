@@ -7,6 +7,10 @@ var cp     = require('child_process'),
 describe('Gateway', function () {
 	this.slow(5000);
 
+	after('terminate child process', function () {
+		gateway.kill('SIGKILL');
+	});
+
 	describe('#spawn', function () {
 		it('should spawn a child process', function () {
 			assert.ok(gateway = cp.fork(process.cwd()), 'Child process not spawned.');
@@ -44,12 +48,7 @@ describe('Gateway', function () {
 					messageId: '55fce1455167c470abeedae2',
 					message: 'TURNOFF'
 				}
-			}, function (error) {
-				assert.ifError(error);
-			});
-
-			gateway.kill('SIGKILL');
-			done();
+			}, done);
 		});
 	});
 });
