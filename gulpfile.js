@@ -9,7 +9,7 @@ var gulp     = require('gulp'),
 var paths = {
 	js: ['*.js', '*/*.js', '*/**/*.js', '!node_modules/**'],
 	json: ['*.json', '*/*.json', '*/**/*.json', '!node_modules/**'],
-	tests: ['./tests/*.js']
+	tests: ['./test/*.js']
 };
 
 gulp.task('jslint', function () {
@@ -34,7 +34,7 @@ gulp.task('run-tests', function () {
 			read: false
 		})
 		.pipe(mocha({
-			reporter: 'nyan'
+			reporter: 'list'
 		}))
 		.once('error', function (error) {
 			console.error(error);

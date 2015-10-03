@@ -5,6 +5,8 @@ var cp     = require('child_process'),
 	gateway;
 
 describe('Gateway', function () {
+	this.slow(5000);
+
 	describe('#spawn', function () {
 		it('should spawn a child process', function () {
 			assert.ok(gateway = cp.fork(process.cwd()), 'Child process not spawned.');
@@ -12,22 +14,19 @@ describe('Gateway', function () {
 	});
 
 	describe('#handShake', function () {
-		it('should notify the parent process when ready within 5 seconds', function () {
-			var initTimeout;
+		it('should notify the parent process when ready within 5 seconds', function (done) {
+			this.timeout(5000);
 
-			gateway.on('ready', function () {
-				clearTimeout(initTimeout);
+			gateway.on('message', function (message) {
+				if (message.type === 'ready')
+					done();
 			});
-
-			initTimeout = setTimeout(function () {
-				assert.ok(false, 'Plugin init timeout.');
-			}, 5000);
 
 			gateway.send({
 				type: 'ready',
 				data: {
 					options: {
-						port: 8080
+						port: 8081
 					}
 				}
 			}, function (error) {
@@ -37,7 +36,7 @@ describe('Gateway', function () {
 	});
 
 	describe('#message', function () {
-		it('should process the message', function () {
+		it('should process the message', function (done) {
 			gateway.send({
 				type: 'message',
 				data: {
@@ -48,6 +47,9 @@ describe('Gateway', function () {
 			}, function (error) {
 				assert.ifError(error);
 			});
+
+			gateway.kill('SIGKILL');
+			done();
 		});
 	});
 });
