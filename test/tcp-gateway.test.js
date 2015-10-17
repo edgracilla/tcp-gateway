@@ -1,5 +1,7 @@
 'use strict';
 
+const PORT = 8080;
+
 var cp     = require('child_process'),
 	assert = require('assert'),
 	gateway;
@@ -30,7 +32,7 @@ describe('Gateway', function () {
 				type: 'ready',
 				data: {
 					options: {
-						port: 8081
+						port: PORT
 					}
 				}
 			}, function (error) {
