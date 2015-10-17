@@ -1,8 +1,8 @@
 'use strict';
 
-var server, serverAddress,
-	platform  = require('./platform'),
-	TCPServer = require('./server');
+var platform  = require('./platform'),
+	TCPServer = require('./server'),
+	server;
 
 /*
  * Listen for the message event. Send these messages/commands to devices from this server.
@@ -32,8 +32,6 @@ platform.once('ready', function (options) {
 		decoder       = new StringDecoder('utf8'),
 		isJSON        = require('is-json');
 
-	serverAddress = host + '' + options.port;
-
 	server = new TCPServer({
 		_keepaliveTimeout: 3600000
 	});
@@ -45,11 +43,6 @@ platform.once('ready', function (options) {
 
 	server.on('client_on', function (clientAddress) {
 		server.send(clientAddress, 'CONNACK');
-		platform.notifyConnection(clientAddress);
-	});
-
-	server.on('client_off', function (clientAddress) {
-		platform.notifyDisconnection(clientAddress);
 	});
 
 	server.on('client_error', function (error) {
@@ -63,7 +56,7 @@ platform.once('ready', function (options) {
 			var obj = JSON.parse(data);
 
 			if (obj.type === 'data')
-				platform.processData(obj.device, client, obj.data);
+				platform.processData(obj.device, data);
 			else if (obj.type === 'message')
 				platform.sendMessageToDevice(obj.target, obj.message);
 			else if (obj.type === 'groupmessage')

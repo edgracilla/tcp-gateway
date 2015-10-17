@@ -28,7 +28,7 @@ Platform.init = function () {
 
 	process.on('message', function (m) {
 		if (m.type === 'ready')
-			self.emit('ready', m.data.options);
+			self.emit('ready', m.data.options, m.data.devices);
 		else if (m.type === 'message')
 			self.emit('message', m.data);
 	});
@@ -52,7 +52,7 @@ Platform.prototype.notifyConnection = function (clientId, callback) {
 		};
 
 	setImmediate(function () {
-		if (!clientId || !isString(clientId)) return callback(new Error('A valid client identifier is required.'));
+		if (!clientId || !isString(clientId)) return callback(new Error('A valid client/device identifier is required.'));
 
 		process.send({
 			type: 'connection',
@@ -68,7 +68,7 @@ Platform.prototype.notifyDisconnection = function (clientId, callback) {
 		};
 
 	setImmediate(function () {
-		if (!clientId || !isString(clientId)) return callback(new Error('A valid client identifier is required.'));
+		if (!clientId || !isString(clientId)) return callback(new Error('A valid client/device identifier is required.'));
 
 		process.send({
 			type: 'disconnect',
@@ -92,20 +92,18 @@ Platform.prototype.notifyClose = function (callback) {
 	});
 };
 
-Platform.prototype.processData = function (device, clientId, data, callback) {
+Platform.prototype.processData = function (device, data, callback) {
 	callback = callback || function () {
 		};
 
 	setImmediate(function () {
-		if (!device || !isString(device)) return callback(new Error('A valid device id is required.'));
-		if (!clientId || !isString(clientId)) return callback(new Error('A valid client identifier is required.'));
+		if (!device || !isString(device)) return callback(new Error('A valid client/device identifier is required.'));
 		if (!data || !isString(data)) return callback(new Error('A valid data is required.'));
 
 		process.send({
 			type: 'data',
 			data: {
 				device: device,
-				client: clientId,
 				data: data
 			}
 		});
