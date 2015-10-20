@@ -36,8 +36,8 @@ platform.once('ready', function (options) {
 	});
 
 	server.once('ready', function () {
-		console.log('TCP Server now listening on port '.concat(options.port));
 		platform.notifyReady();
+		platform.log('TCP Gateway initialized on port ' + options.port);
 	});
 
 	server.on('client_on', function (clientAddress) {
