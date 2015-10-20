@@ -74,5 +74,5 @@ platform.once('ready', function (options) {
 		platform.notifyClose();
 	});
 
-	server.listen(options.port, options.host);
+	server.listen(options.port, '0.0.0.0');
 });
