@@ -27,8 +27,7 @@ platform.on('message', function (message) {
  * Listen for the ready event.
  */
 platform.once('ready', function (options) {
-	var host          = require('ip').address(),
-		StringDecoder = require('string_decoder').StringDecoder,
+	var StringDecoder = require('string_decoder').StringDecoder,
 		decoder       = new StringDecoder('utf8'),
 		isJSON        = require('is-json');
 
@@ -37,7 +36,7 @@ platform.once('ready', function (options) {
 	});
 
 	server.once('ready', function () {
-		console.log('TCP Server now listening on '.concat(host).concat(':').concat(options.port));
+		console.log('TCP Server now listening on port '.concat(options.port));
 		platform.notifyReady();
 	});
 
@@ -75,5 +74,5 @@ platform.once('ready', function (options) {
 		platform.notifyClose();
 	});
 
-	server.listen(options.port, host);
+	server.listen(options.port, '0.0.0.0');
 });
