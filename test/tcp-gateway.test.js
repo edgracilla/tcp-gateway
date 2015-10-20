@@ -1,7 +1,6 @@
 'use strict';
 
-const HOST = '0.0.0.0',
-	  PORT = 8080;
+const PORT = 8080;
 
 var cp     = require('child_process'),
 	assert = require('assert'),
@@ -33,7 +32,6 @@ describe('Gateway', function () {
 				type: 'ready',
 				data: {
 					options: {
-						host: HOST,
 						port: PORT
 					}
 				}

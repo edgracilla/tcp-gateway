@@ -1,7 +1,6 @@
 'use strict';
 
-var platform  = require('./platform'),
-	TCPServer = require('./server'),
+var platform = require('./platform'),
 	server;
 
 /*
@@ -27,9 +26,10 @@ platform.on('message', function (message) {
  * Listen for the ready event.
  */
 platform.once('ready', function (options) {
-	var StringDecoder = require('string_decoder').StringDecoder,
-		decoder       = new StringDecoder('utf8'),
-		isJSON        = require('is-json');
+	var isJSON        = require('is-json'),
+		TCPServer     = require('./server'),
+		StringDecoder = require('string_decoder').StringDecoder,
+		decoder       = new StringDecoder('utf8');
 
 	server = new TCPServer({
 		_keepaliveTimeout: 3600000
