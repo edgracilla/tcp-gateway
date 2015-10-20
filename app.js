@@ -16,7 +16,12 @@ platform.on('message', function (message) {
 			}
 			else {
 				platform.sendMessageResponse(message.messageId, 'Message Sent');
-				platform.log(JSON.stringify(message));
+				platform.log(JSON.stringify({
+						title: 'Message Sent',
+						client: message.client,
+						messageId: message.messageId,
+						message: message.message
+				}));
 			}
 		});
 	}
