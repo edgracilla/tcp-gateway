@@ -16,7 +16,12 @@ platform.on('message', function (message) {
 			}
 			else {
 				platform.sendMessageResponse(message.messageId, 'Message Sent');
-				platform.log(JSON.stringify(message));
+				platform.log(JSON.stringify({
+						title: 'Message Sent',
+						client: message.client,
+						messageId: message.messageId,
+						message: message.message
+				}));
 			}
 		});
 	}
@@ -36,8 +41,8 @@ platform.once('ready', function (options) {
 	});
 
 	server.once('ready', function () {
-		console.log('TCP Server now listening on port '.concat(options.port));
 		platform.notifyReady();
+		platform.log('TCP Gateway initialized on port ' + options.port);
 	});
 
 	server.on('client_on', function (clientAddress) {
