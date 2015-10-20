@@ -17,7 +17,7 @@ platform.on('message', function (message) {
 			}
 			else {
 				platform.sendMessageResponse(message.messageId, 'Message Sent');
-				platform.log('Message Sent', message.message);
+				platform.log(JSON.stringify(message));
 			}
 		});
 	}
@@ -62,7 +62,7 @@ platform.once('ready', function (options) {
 				platform.sendMessageToGroup(obj.target, obj.message);
 		}
 
-		platform.log('Raw Data Received', data);
+		platform.log(data);
 	});
 
 	server.on('error', function (error) {
