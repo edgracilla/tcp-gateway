@@ -1,21 +1,24 @@
 'use strict';
 
-const PORT = 8080;
+const PORT       = 8080,
+	  CONNACK    = 'CONNACK',
+	  CLIENT_ID1 = '567827489028375',
+	  CLIENT_ID2 = '567827489028376';
 
 var cp     = require('child_process'),
 	assert = require('assert'),
-	gateway;
+	tcpGateway;
 
-describe('Gateway', function () {
+describe('TCP Gateway', function () {
 	this.slow(5000);
 
 	after('terminate child process', function () {
-		gateway.kill('SIGKILL');
+		tcpGateway.kill('SIGKILL');
 	});
 
 	describe('#spawn', function () {
 		it('should spawn a child process', function () {
-			assert.ok(gateway = cp.fork(process.cwd()), 'Child process not spawned.');
+			assert.ok(tcpGateway = cp.fork(process.cwd()), 'Child process not spawned.');
 		});
 	});
 
@@ -23,17 +26,19 @@ describe('Gateway', function () {
 		it('should notify the parent process when ready within 5 seconds', function (done) {
 			this.timeout(5000);
 
-			gateway.on('message', function (message) {
+			tcpGateway.on('message', function (message) {
 				if (message.type === 'ready')
 					done();
 			});
 
-			gateway.send({
+			tcpGateway.send({
 				type: 'ready',
 				data: {
 					options: {
-						port: PORT
-					}
+						port: PORT,
+						connack: CONNACK
+					},
+					devices: [{_id: CLIENT_ID1}, {_id: CLIENT_ID2}]
 				}
 			}, function (error) {
 				assert.ifError(error);
@@ -43,7 +48,7 @@ describe('Gateway', function () {
 
 	describe('#message', function () {
 		it('should process the message', function (done) {
-			gateway.send({
+			tcpGateway.send({
 				type: 'message',
 				data: {
 					client: '571826372902789',
