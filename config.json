@@ -1,1 +1,8 @@
-{}
+{
+  "connack": {
+	"type": "String",
+	"label": "Connection ACK",
+	"default": "CONNACK",
+	"help": "(Optional) The welcome message to send to new device connections. Default: CONNACK"
+  }
+}
