@@ -58,6 +58,13 @@ platform.on('removedevice', function (device) {
 });
 
 /*
+ * Event to listen to in order to gracefully release all resources bound to this service.
+ */
+platform.on('close', function () {
+	server.close();
+});
+
+/*
  * Listen for the ready event.
  */
 platform.once('ready', function (options, registeredDevices) {
@@ -167,9 +174,15 @@ platform.once('ready', function (options, registeredDevices) {
 	});
 
 	server.on('error', function (error) {
+		if (error.code === 'EADDRINUSE')
+			server.close();
+
 		console.error('Server Error', error);
 		platform.handleException(error);
 	});
 
-	server.listen(options.port, '0.0.0.0');
+	server.listen({
+		port: options.port,
+		exclusive: false
+	});
 });
