@@ -13,7 +13,15 @@ describe('TCP Gateway', function () {
 	this.slow(8000);
 
 	after('terminate child process', function () {
-		tcpGateway.kill('SIGKILL');
+		this.timeout(5000);
+
+		tcpGateway.send({
+			type: 'close'
+		});
+
+		setTimeout(function () {
+			tcpGateway.kill('SIGKILL');
+		}, 4500);
 	});
 
 	describe('#spawn', function () {
