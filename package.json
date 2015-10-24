@@ -1,7 +1,7 @@
 {
   "name": "tcp-gateway",
   "description": "JSON TCP Gateway Plugin for the Reekoh IoT Platform.",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "author": "Reekoh, Inc.",
   "main": "app.js",
   "scripts": {

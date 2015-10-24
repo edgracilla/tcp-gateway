@@ -5,7 +5,7 @@ var net               = require('net'),
 	clients           = {},
 	addresses         = {},
 	authorizedDevices = {},
-	server;
+	server, port;
 
 /*
  * Listen for the message event. Send these messages/commands to devices from this server.
@@ -61,7 +61,18 @@ platform.on('removedevice', function (device) {
  * Event to listen to in order to gracefully release all resources bound to this service.
  */
 platform.on('close', function () {
-	server.close();
+	try {
+		server.close(function () {
+			console.log('TCP Gateway closed on port ' + port);
+			platform.notifyClose();
+		});
+	}
+	catch (err) {
+		console.error('Error closing TCP Gateway on port ' + port, err);
+		platform.handleException(err);
+	}
+
+	platform.notifyClose();
 });
 
 /*
@@ -81,6 +92,7 @@ platform.once('ready', function (options, registeredDevices) {
 	var connack = options.connack || config.connack.default;
 
 	server = net.createServer();
+	port = options.port;
 
 	server.maxConnections = 1024;
 
@@ -167,10 +179,6 @@ platform.once('ready', function (options, registeredDevices) {
 		});
 
 		socket.write(new Buffer(connack + '\r\n'));
-	});
-
-	server.on('close', function () {
-		platform.notifyClose();
 	});
 
 	server.on('error', function (error) {
