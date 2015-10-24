@@ -5,7 +5,7 @@ var net               = require('net'),
 	clients           = {},
 	addresses         = {},
 	authorizedDevices = {},
-	server;
+	server, port;
 
 /*
  * Listen for the message event. Send these messages/commands to devices from this server.
@@ -63,10 +63,10 @@ platform.on('removedevice', function (device) {
 platform.on('close', function () {
 	try {
 		server.close();
-		console.log('MQTT Gateway closed on port ' + port);
+		console.log('TCP Gateway closed on port ' + port);
 	}
 	catch (err) {
-		console.error('Error closing MQTT Gateway on port ' + port, err);
+		console.error('Error closing TCP Gateway on port ' + port, err);
 		platform.handleException(err);
 	}
 
@@ -90,6 +90,7 @@ platform.once('ready', function (options, registeredDevices) {
 	var connack = options.connack || config.connack.default;
 
 	server = net.createServer();
+	port = options.port;
 
 	server.maxConnections = 1024;
 
