@@ -62,8 +62,10 @@ platform.on('removedevice', function (device) {
  */
 platform.on('close', function () {
 	try {
-		server.close();
-		console.log('TCP Gateway closed on port ' + port);
+		server.close(function () {
+			console.log('TCP Gateway closed on port ' + port);
+			platform.notifyClose();
+		});
 	}
 	catch (err) {
 		console.error('Error closing TCP Gateway on port ' + port, err);
@@ -177,10 +179,6 @@ platform.once('ready', function (options, registeredDevices) {
 		});
 
 		socket.write(new Buffer(connack + '\r\n'));
-	});
-
-	server.on('close', function () {
-		platform.notifyClose();
 	});
 
 	server.on('error', function (error) {
