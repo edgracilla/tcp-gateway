@@ -184,7 +184,7 @@ platform.once('ready', function (options, registeredDevices) {
 	server.on('error', function (error) {
 		console.error('Server Error', error);
 		platform.handleException(error);
-		
+
 		if (error.code === 'EADDRINUSE')
 			process.exit(1);
 	});
