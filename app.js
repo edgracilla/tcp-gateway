@@ -15,9 +15,9 @@ platform.on('message', function (message) {
 		var msg = message.message || new Buffer([0x00]);
 
 		if (!Buffer.isBuffer(msg))
-			message = new Buffer(msg + '\r\n');
+			msg = new Buffer(msg + '\r\n');
 
-		clients[message.device].write(message, function () {
+		clients[message.device].write(msg, function () {
 			platform.sendMessageResponse(message.messageId, 'Message Sent');
 			platform.log(JSON.stringify({
 				title: 'Message Sent',
