@@ -1,6 +1,8 @@
 'use strict';
 
 var net               = require('net'),
+	domain            = require('domain'),
+	socketDomain      = domain.create(),
 	platform          = require('./platform'),
 	clients           = {},
 	addresses         = {},
@@ -61,16 +63,15 @@ platform.on('removedevice', function (device) {
  * Event to listen to in order to gracefully release all resources bound to this service.
  */
 platform.on('close', function () {
-	var domain = require('domain');
-	var d = domain.create();
+	var closeDomain = domain.create();
 
-	d.on('error', function (error) {
+	closeDomain.on('error', function (error) {
 		console.error('Error closing TCP Gateway on port ' + port, error);
 		platform.handleException(error);
 		platform.notifyClose();
 	});
 
-	d.run(function () {
+	closeDomain.run(function () {
 		server.close(function () {
 			console.log('TCP Gateway closed on port ' + port);
 			platform.notifyClose();
@@ -83,7 +84,6 @@ platform.on('close', function () {
  */
 platform.once('ready', function (options, registeredDevices) {
 	var _      = require('lodash'),
-		isJSON = require('is-json'),
 		config = require('./config.json');
 
 	if (!_.isEmpty(registeredDevices)) {
@@ -108,7 +108,12 @@ platform.once('ready', function (options, registeredDevices) {
 		socket.setTimeout(3600000);
 
 		socket.on('data', function (data) {
-			if (isJSON(data)) {
+			socketDomain.on('error', function (error) {
+				socket.write(new Buffer('Invalid data sent. This TCP Gateway only accepts JSON data.' + '\r\n'));
+				platform.handleException(error);
+			});
+
+			socketDomain.run(function () {
 				var obj = JSON.parse(data);
 
 				if (_.isEmpty(obj.device)) return;
@@ -127,7 +132,7 @@ platform.once('ready', function (options, registeredDevices) {
 					platform.log(JSON.stringify({
 						title: 'Data Received.',
 						device: obj.device,
-						data: data
+						data: obj
 					}));
 
 					if (_.isEmpty(clients[obj.device])) {
@@ -157,9 +162,7 @@ platform.once('ready', function (options, registeredDevices) {
 				}
 				else
 					socket.write(new Buffer('Invalid data. One or more fields missing. [device, type] are required for data. [device, type, target, message] are required for messages.' + '\r\n'));
-			}
-			else
-				socket.write(new Buffer('Invalid data sent. This TCP Gateway only accepts JSON data.' + '\r\n'));
+			});
 		});
 
 		socket.on('timeout', function () {
