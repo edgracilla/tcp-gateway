@@ -1,9 +1,7 @@
 'use strict';
 
-var net               = require('net'),
-	domain            = require('domain'),
-	socketDomain      = domain.create(),
-	platform          = require('./platform'),
+var platform          = require('./platform'),
+	isEmpty           = require('lodash.isempty'),
 	clients           = {},
 	addresses         = {},
 	authorizedDevices = {},
@@ -35,9 +33,7 @@ platform.on('message', function (message) {
  * When a new device is added, add it to the list of authorized devices.
  */
 platform.on('adddevice', function (device) {
-	var _ = require('lodash');
-
-	if (!_.isEmpty(device) && !_.isEmpty(device._id)) {
+	if (!isEmpty(device) && !isEmpty(device._id)) {
 		authorizedDevices[device._id] = device;
 		platform.log('Successfully added ' + device._id + ' to the pool of authorized devices.');
 	}
@@ -49,9 +45,7 @@ platform.on('adddevice', function (device) {
  * When a device is removed or deleted, remove it from the list of authorized devices.
  */
 platform.on('removedevice', function (device) {
-	var _ = require('lodash');
-
-	if (!_.isEmpty(device) && !_.isEmpty(device._id)) {
+	if (!isEmpty(device) && !isEmpty(device._id)) {
 		delete authorizedDevices[device._id];
 		platform.log('Successfully removed ' + device._id + ' from the pool of authorized devices.');
 	}
@@ -63,7 +57,7 @@ platform.on('removedevice', function (device) {
  * Event to listen to in order to gracefully release all resources bound to this service.
  */
 platform.on('close', function () {
-	var closeDomain = domain.create();
+	var closeDomain = require('domain').create();
 
 	closeDomain.on('error', function (error) {
 		console.error('Error closing TCP Gateway on port ' + port, error);
@@ -83,13 +77,16 @@ platform.on('close', function () {
  * Listen for the ready event.
  */
 platform.once('ready', function (options, registeredDevices) {
-	var _      = require('lodash'),
-		config = require('./config.json');
+	var net          = require('net'),
+		clone        = require('lodash.clone'),
+		config       = require('./config.json'),
+		socketDomain = require('domain').create();
 
-	if (!_.isEmpty(registeredDevices)) {
-		var tmpDevices = _.clone(registeredDevices, true);
+	if (!isEmpty(registeredDevices)) {
+		var indexBy = require('lodash.indexby');
+		var tmpDevices = clone(registeredDevices, true);
 
-		authorizedDevices = _.indexBy(tmpDevices, '_id');
+		authorizedDevices = indexBy(tmpDevices, '_id');
 	}
 
 	var connack = options.connack || config.connack.default;
@@ -108,17 +105,17 @@ platform.once('ready', function (options, registeredDevices) {
 		socket.setTimeout(3600000);
 
 		socket.on('data', function (data) {
-			socketDomain.on('error', function (error) {
-				socket.write(new Buffer('Invalid data sent. This TCP Gateway only accepts JSON data.' + '\r\n'));
+			socketDomain.once('error', function (error) {
+				socket.write(new Buffer('Invalid data sent. This TCP Gateway only accepts JSON data.\r\n'));
 				platform.handleException(error);
 			});
 
 			socketDomain.run(function () {
 				var obj = JSON.parse(data);
 
-				if (_.isEmpty(obj.device)) return;
+				if (isEmpty(obj.device)) return;
 
-				if (_.isEmpty(authorizedDevices[obj.device])) {
+				if (isEmpty(authorizedDevices[obj.device])) {
 					platform.log(JSON.stringify({
 						title: 'Unauthorized Device',
 						device: obj.device
@@ -135,7 +132,7 @@ platform.once('ready', function (options, registeredDevices) {
 						data: obj
 					}));
 
-					if (_.isEmpty(clients[obj.device])) {
+					if (isEmpty(clients[obj.device])) {
 						clients[obj.device] = socket;
 						addresses[socket.remoteAddress + ':' + socket.remotePort] = obj.device;
 					}
