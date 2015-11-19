@@ -1,6 +1,7 @@
 'use strict';
 
-var platform          = require('./platform'),
+var domain            = require('domain'),
+	platform          = require('./platform'),
 	isEmpty           = require('lodash.isempty'),
 	clients           = {},
 	addresses         = {},
@@ -57,7 +58,7 @@ platform.on('removedevice', function (device) {
  * Event to listen to in order to gracefully release all resources bound to this service.
  */
 platform.on('close', function () {
-	var closeDomain = require('domain').create();
+	var closeDomain = domain.create();
 
 	closeDomain.on('error', function (error) {
 		console.error('Error closing TCP Gateway on port ' + port, error);
@@ -77,10 +78,9 @@ platform.on('close', function () {
  * Listen for the ready event.
  */
 platform.once('ready', function (options, registeredDevices) {
-	var net          = require('net'),
-		clone        = require('lodash.clone'),
-		config       = require('./config.json'),
-		socketDomain = require('domain').create();
+	var net    = require('net'),
+		clone  = require('lodash.clone'),
+		config = require('./config.json');
 
 	if (!isEmpty(registeredDevices)) {
 		var indexBy = require('lodash.indexby');
@@ -105,15 +105,19 @@ platform.once('ready', function (options, registeredDevices) {
 		socket.setTimeout(3600000);
 
 		socket.on('data', function (data) {
+			var socketDomain = domain.create();
+
 			socketDomain.once('error', function (error) {
 				socket.write(new Buffer('Invalid data sent. This TCP Gateway only accepts JSON data.\r\n'));
 				platform.handleException(error);
+
+				socketDomain.exit();
 			});
 
 			socketDomain.run(function () {
 				var obj = JSON.parse(data);
 
-				if (isEmpty(obj.device)) return;
+				if (isEmpty(obj.device)) return socketDomain.exit();
 
 				if (isEmpty(authorizedDevices[obj.device])) {
 					platform.log(JSON.stringify({
@@ -121,7 +125,9 @@ platform.once('ready', function (options, registeredDevices) {
 						device: obj.device
 					}));
 
-					return socket.destroy();
+					socket.destroy();
+
+					return socketDomain.exit();
 				}
 
 				if (obj.type === 'data') {
@@ -159,6 +165,8 @@ platform.once('ready', function (options, registeredDevices) {
 				}
 				else
 					socket.write(new Buffer('Invalid data. One or more fields missing. [device, type] are required for data. [device, type, target, message] are required for messages.' + '\r\n'));
+
+				socketDomain.exit();
 			});
 		});
 
