@@ -113,13 +113,15 @@ platform.once('ready', function (options, registeredDevices) {
 			socketDomain.run(function () {
 				var obj = JSON.parse(data);
 
-				if (isEmpty(obj.device)) return;
+				if (isEmpty(obj.device)) return socketDomain.removeAllListeners('error');
 
 				if (isEmpty(authorizedDevices[obj.device])) {
 					platform.log(JSON.stringify({
 						title: 'Unauthorized Device',
 						device: obj.device
 					}));
+
+					socketDomain.removeAllListeners('error');
 
 					return socket.destroy();
 				}
@@ -159,6 +161,8 @@ platform.once('ready', function (options, registeredDevices) {
 				}
 				else
 					socket.write(new Buffer('Invalid data. One or more fields missing. [device, type] are required for data. [device, type, target, message] are required for messages.' + '\r\n'));
+
+				socketDomain.removeAllListeners('error');
 			});
 		});
 
