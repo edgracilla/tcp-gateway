@@ -105,7 +105,7 @@ platform.once('ready', function (options, registeredDevices) {
 		socket.setTimeout(3600000);
 
 		socket.on('data', function (data) {
-			socketDomain.on('error', function (error) {
+			socketDomain.once('error', function (error) {
 				socket.write(new Buffer('Invalid data sent. This TCP Gateway only accepts JSON data.\r\n'));
 				platform.handleException(error);
 			});
