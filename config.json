@@ -1,4 +1,22 @@
 {
+  "data_topic": {
+	"type": "String",
+	"label": "Data Topic",
+	"default": "data",
+	"help": "(Optional) The topic to listen to for device data. Default: data"
+  },
+  "message_topic": {
+	"type": "String",
+	"label": "Message Topic",
+	"default": "messages",
+	"help": "(Optional) The topic to listen to for device messages or commands. Default: messages"
+  },
+  "groupmessage_topic": {
+	"type": "String",
+	"label": "Group Message Topic",
+	"default": "groupmessages",
+	"help": "(Optional) The topic to listen to for group messages or commands. Default: groupmessages"
+  },
   "connack": {
 	"type": "String",
 	"label": "Connection ACK",
