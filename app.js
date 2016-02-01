@@ -184,8 +184,6 @@ platform.once('ready', function (options, registeredDevices) {
 				else {
 					platform.handleException(new Error(`Invalid topic specified. Topic: ${obj.topic}`));
 					socket.write(new Buffer(`Invalid topic specified. Topic: ${obj.topic}\r\n`));
-
-					return d.exit();
 				}
 
 				d.exit();
