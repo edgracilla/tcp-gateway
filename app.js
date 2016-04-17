@@ -94,7 +94,7 @@ platform.once('ready', function (options, registeredDevices) {
 				async.constant(data),
 				async.asyncify(JSON.parse)
 			], (error, obj) => {
-				if (error || isEmpty(obj.topic)) {
+				if (error || isEmpty(obj.topic || isEmpty(obj.device)) {
 					socket.write(new Buffer('Invalid data sent. Data must be a valid JSON String with a "topic" field and a "device" field which corresponds to a registered Device ID.\r\n'));
 					platform.handleException(new Error('Invalid data sent. Data must be a valid JSON String with a "topic" field and a "device" field which corresponds to a registered Device ID.'));
 				}
