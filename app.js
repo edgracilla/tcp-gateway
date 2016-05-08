@@ -77,11 +77,13 @@ platform.once('ready', function (options) {
 				}
 
 				platform.requestDeviceInfo(obj.device, (error, requestId) => {
-					setTimeout(() => {
+					let t = setTimeout(() => {
 						platform.removeAllListeners(requestId);
 					}, 5000);
 
 					platform.once(requestId, (deviceInfo) => {
+						clearTimeout(t);
+
 						if (isEmpty(deviceInfo)) {
 							platform.log(JSON.stringify({
 								title: 'TCP Gateway - Access Denied. Unauthorized Device',
