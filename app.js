@@ -75,11 +75,11 @@ platform.once('ready', function (options) {
 					return platform.handleException(new Error('Invalid data sent. Data must be a valid JSON String with a "topic" field and a "device" field which corresponds to a registered Device ID.'));
 				}
 
-				if (isEmpty(clients[obj.device]))
+				if (isEmpty(clients[obj.device])) {
+					platform.notifyConnection(obj.device);
+					socket.device = obj.device;
 					clients[obj.device] = socket;
-
-				platform.notifyConnection(obj.device);
-				socket.device = obj.device;
+				}
 
 				platform.requestDeviceInfo(obj.device, (error, requestId) => {
 					platform.once(requestId, (deviceInfo) => {
