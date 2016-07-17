@@ -1,10 +1,9 @@
 'use strict';
 
-var async     = require('async'),
-	platform  = require('./platform'),
-	isEmpty   = require('lodash.isempty'),
-	clients   = {},
-	addresses = {},
+var async    = require('async'),
+	platform = require('./platform'),
+	isEmpty  = require('lodash.isempty'),
+	clients  = {},
 	server, port;
 
 platform.on('message', function (message) {
@@ -76,12 +75,11 @@ platform.once('ready', function (options) {
 					return platform.handleException(new Error('Invalid data sent. Data must be a valid JSON String with a "topic" field and a "device" field which corresponds to a registered Device ID.'));
 				}
 
-				if (isEmpty(clients[obj.device])) {
+				if (isEmpty(clients[obj.device]))
 					clients[obj.device] = socket;
-					addresses[`${socket.remoteAddress}:${socket.remotePort}`] = obj.device;
-				}
 
 				platform.notifyConnection(obj.device);
+				socket.device = obj.device;
 
 				platform.requestDeviceInfo(obj.device, (error, requestId) => {
 					platform.once(requestId, (deviceInfo) => {
@@ -151,19 +149,26 @@ platform.once('ready', function (options) {
 
 		socket.on('timeout', () => {
 			platform.log('TCP Gateway - Socket Timeout.');
+
+			if (socket.device)
+				platform.notifyDisconnection(socket.device);
+
 			socket.destroy();
 		});
 
 		socket.on('error', (error) => {
 			console.error('Client Error.', error);
+
+			if (socket.device)
+				platform.notifyDisconnection(socket.device);
+
+			socket.destroy();
 			platform.handleException(error);
 		});
 
 		socket.on('close', () => {
-			let device = addresses[`${socket.remoteAddress}:${socket.remotePort}`];
-
-			if (device)
-				platform.notifyDisconnection(device);
+			if (socket.device)
+				platform.notifyDisconnection(socket.device);
 		});
 
 		socket.write(new Buffer(`${connack}\n`));
