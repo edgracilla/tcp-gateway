@@ -80,6 +80,33 @@ platform.once('ready', function (options) {
 		socket.setKeepAlive(true, 5000);
 		socket.setTimeout(3600000);
 
+		socket.on('error', (error) => {
+			console.error('Client Error.', error);
+
+			if (socket.device)
+				platform.notifyDisconnection(socket.device);
+
+			socket.destroy();
+			platform.handleException(error);
+		});
+
+		socket.on('timeout', () => {
+			platform.log('TCP Gateway - Socket Timeout.');
+
+			if (socket.device)
+				platform.notifyDisconnection(socket.device);
+
+			socket.destroy();
+		});
+
+		socket.on('close', () => {
+			if (socket.device) platform.notifyDisconnection(socket.device);
+
+			setTimeout(() => {
+				socket.removeAllListeners();
+			}, 5000);
+		});
+
 		socket.on('data', (data) => {
 			async.waterfall([
 				async.constant(data || '{}'),
@@ -160,33 +187,6 @@ platform.once('ready', function (options) {
 					});
 				});
 			});
-		});
-
-		socket.on('timeout', () => {
-			platform.log('TCP Gateway - Socket Timeout.');
-
-			if (socket.device)
-				platform.notifyDisconnection(socket.device);
-
-			socket.destroy();
-		});
-
-		socket.on('error', (error) => {
-			console.error('Client Error.', error);
-
-			if (socket.device)
-				platform.notifyDisconnection(socket.device);
-
-			socket.destroy();
-			platform.handleException(error);
-		});
-
-		socket.on('close', () => {
-			if (socket.device) platform.notifyDisconnection(socket.device);
-
-			setTimeout(() => {
-				socket.removeAllListeners();
-			}, 5000);
 		});
 
 		socket.write(new Buffer(`${connack}\n`));
