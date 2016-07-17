@@ -4,7 +4,7 @@ var async    = require('async'),
 	platform = require('./platform'),
 	isEmpty  = require('lodash.isempty'),
 	clients  = {},
-	server, port;
+	server;
 
 platform.on('message', function (message) {
 	if (!isEmpty(clients[message.device])) {
@@ -30,15 +30,15 @@ platform.on('close', () => {
 	let d = require('domain').create();
 
 	d.on('error', function (error) {
-		console.error(`Error closing TCP Gateway on port ${port}`, error);
 		platform.handleException(error);
 		platform.notifyClose();
 	});
 
 	d.run(function () {
 		server.close(() => {
-			console.log(`TCP Gateway closed on port ${port}`);
+			server.removeAllListeners();
 			platform.notifyClose();
+			d.exit();
 		});
 	});
 });
@@ -53,11 +53,26 @@ platform.once('ready', function (options) {
 	let groupMessageTopic = options.groupmessage_topic || config.groupmessage_topic.default;
 
 	server = net.createServer();
-	port = options.port;
 
-	server.on('listening', () => {
+	server.once('error', (error) => {
+		console.error('TCP Gateway Error', error);
+		platform.handleException(error);
+
+		setTimeout(() => {
+			server.close(() => {
+				server.removeAllListeners();
+				process.exit();
+			});
+		}, 5000);
+	});
+
+	server.once('listening', () => {
 		platform.log(`TCP Gateway initialized on port ${options.port}`);
 		platform.notifyReady();
+	});
+
+	server.once('close', function () {
+		platform.log(`TCP Gateway closed on port ${options.port}`);
 	});
 
 	server.on('connection', (socket) => {
@@ -167,23 +182,15 @@ platform.once('ready', function (options) {
 		});
 
 		socket.on('close', () => {
-			if (socket.device)
-				platform.notifyDisconnection(socket.device);
+			if (socket.device) platform.notifyDisconnection(socket.device);
+
+			setTimeout(() => {
+				socket.removeAllListeners();
+			}, 5000);
 		});
 
 		socket.write(new Buffer(`${connack}\n`));
 	});
 
-	server.on('error', (error) => {
-		console.error('Server Error', error);
-		platform.handleException(error);
-
-		if (error.code === 'EADDRINUSE')
-			process.exit(1);
-	});
-
-	server.listen({
-		port: options.port,
-		exclusive: false
-	});
+	server.listen(options.port);
 });
