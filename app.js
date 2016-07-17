@@ -7,7 +7,7 @@ var async    = require('async'),
 	server, port;
 
 platform.on('message', function (message) {
-	if (clients[message.device]) {
+	if (!isEmpty(clients[message.device])) {
 		let msg = message.message || new Buffer([0x00]);
 
 		if (!Buffer.isBuffer(msg))
