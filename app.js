@@ -100,7 +100,10 @@ platform.once('ready', function (options) {
 		});
 
 		socket.on('close', () => {
-			if (socket.device) platform.notifyDisconnection(socket.device);
+			if (socket.device) {
+				platform.notifyDisconnection(socket.device);
+				delete clients[socket.device];
+			}
 
 			setTimeout(() => {
 				socket.removeAllListeners();
@@ -117,12 +120,6 @@ platform.once('ready', function (options) {
 					return platform.handleException(new Error('Invalid data sent. Data must be a valid JSON String with a "topic" field and a "device" field which corresponds to a registered Device ID.'));
 				}
 
-				if (isEmpty(clients[obj.device])) {
-					platform.notifyConnection(obj.device);
-					socket.device = obj.device;
-					clients[obj.device] = socket;
-				}
-
 				platform.requestDeviceInfo(obj.device, (error, requestId) => {
 					platform.once(requestId, (deviceInfo) => {
 						if (isEmpty(deviceInfo)) {
@@ -133,6 +130,12 @@ platform.once('ready', function (options) {
 
 							socket.write(new Buffer(`Device not registered. Device ID: ${obj.device}\n`));
 							return socket.destroy();
+						}
+
+						if (isEmpty(clients[obj.device])) {
+							platform.notifyConnection(obj.device);
+							socket.device = obj.device;
+							clients[obj.device] = socket;
 						}
 
 						if (obj.topic === dataTopic) {
