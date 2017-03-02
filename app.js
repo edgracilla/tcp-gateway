@@ -1,199 +1,179 @@
-'use strict';
+'use strict'
 
-var async    = require('async'),
-	platform = require('./platform'),
-	isEmpty  = require('lodash.isempty'),
-	clients  = {},
-	server;
+const reekoh = require('reekoh')
+const plugin = new reekoh.plugins.Gateway()
 
-platform.on('message', function (message) {
-	if (!isEmpty(clients[message.device])) {
-		let msg = message.message || new Buffer([0x00]);
+const async = require('async')
+const isEmpty = require('lodash.isempty')
 
-		if (!Buffer.isBuffer(msg))
-			msg = new Buffer(`${msg}\n`);
+let clients = {}
+let server = null
 
-		clients[message.device].write(msg, () => {
-			platform.sendMessageResponse(message.messageId, 'Message Sent');
+plugin.once('ready', () => {
+  let net = require('net')
+  let config = require('./config.json')
+  let options = plugin.config
+  let msgStr = ''
 
-			platform.log(JSON.stringify({
-				title: 'TCP Gateway - Message Sent',
-				device: message.device,
-				messageId: message.messageId,
-				message: message.message
-			}));
-		});
-	}
-});
+  let connack = options.connack || config.connack.default
+  let dataTopic = options.dataTopic || config.dataTopic.default
+  let commandTopic = options.commandTopic || config.commandTopic.default
 
-platform.on('close', () => {
-	let d = require('domain').create();
+  server = net.createServer()
 
-	d.on('error', function (error) {
-		platform.handleException(error);
-		platform.notifyClose();
-	});
+  server.once('error', (error) => {
+    console.error('TCP Gateway Error', error)
+    plugin.logException(error)
 
-	d.run(function () {
-		server.close(() => {
-			server.removeAllListeners();
-			platform.notifyClose();
-			d.exit();
-		});
-	});
-});
+    setTimeout(() => {
+      server.close(() => {
+        server.removeAllListeners()
+        process.exit()
+      })
+    }, 5000)
+  })
 
-platform.once('ready', function (options) {
-	let net    = require('net'),
-		config = require('./config.json');
+  server.once('listening', () => {
+    plugin.log(`TCP Gateway initialized on port ${options.port}`)
+    plugin.emit('init')
+  })
 
-	let connack = options.connack || config.connack.default;
-	let dataTopic = options.data_topic || config.data_topic.default;
-	let messageTopic = options.message_topic || config.message_topic.default;
-	let groupMessageTopic = options.groupmessage_topic || config.groupmessage_topic.default;
+  server.once('close', function () {
+    plugin.log(`TCP Gateway closed on port ${options.port}`)
+  })
 
-	server = net.createServer();
+  server.on('connection', (socket) => {
+    socket.setEncoding('utf8')
+    socket.setKeepAlive(true, 5000)
+    socket.setTimeout(3600000)
 
-	server.once('error', (error) => {
-		console.error('TCP Gateway Error', error);
-		platform.handleException(error);
+    socket.on('error', (error) => {
+      if (socket.device) plugin.notifyDisconnection(socket.device)
 
-		setTimeout(() => {
-			server.close(() => {
-				server.removeAllListeners();
-				process.exit();
-			});
-		}, 5000);
-	});
+      console.error('Client Error.', error)
+      plugin.logException(error)
+      socket.destroy()
+    })
 
-	server.once('listening', () => {
-		platform.log(`TCP Gateway initialized on port ${options.port}`);
-		platform.notifyReady();
-	});
+    socket.on('timeout', () => {
+      if (socket.device) plugin.notifyDisconnection(socket.device)
 
-	server.once('close', function () {
-		platform.log(`TCP Gateway closed on port ${options.port}`);
-	});
+      plugin.log('TCP Gateway - Socket Timeout.')
+      socket.destroy()
+    })
 
-	server.on('connection', (socket) => {
-		socket.setEncoding('utf8');
-		socket.setKeepAlive(true, 5000);
-		socket.setTimeout(3600000);
+    socket.on('close', () => {
+      if (socket.device) {
+        plugin.notifyDisconnection(socket.device)
+        delete clients[socket.device]
+      }
 
-		socket.on('error', (error) => {
-			console.error('Client Error.', error);
+      setTimeout(() => {
+        socket.removeAllListeners()
+      }, 5000)
+    })
 
-			if (socket.device)
-				platform.notifyDisconnection(socket.device);
+    socket.on('data', (data) => {
+      async.waterfall([
+        async.constant(data || '{}'),
+        async.asyncify(JSON.parse)
+      ], (error, obj) => {
+        if (error || isEmpty(obj.topic || isEmpty(obj.device))) {
+          msgStr = 'Invalid data sent. Data must be a valid JSON String with a "topic" field and a "device" field which corresponds to a registered Device ID.'
+          socket.write(new Buffer(`${msgStr}\n`))
+          return plugin.logException(new Error(msgStr))
+        }
 
-			socket.destroy();
-			platform.handleException(error);
-		});
+        plugin.requestDeviceInfo(obj.device).then((deviceInfo) => {
+          if (isEmpty(deviceInfo)) {
+            socket.write(new Buffer(`Device not registered. Device ID: ${obj.device}\n`))
+            socket.destroy()
 
-		socket.on('timeout', () => {
-			platform.log('TCP Gateway - Socket Timeout.');
+            return plugin.log(JSON.stringify({
+              title: 'TCP Gateway - Access Denied. Unauthorized Device',
+              device: obj.device
+            }))
+          }
 
-			if (socket.device)
-				platform.notifyDisconnection(socket.device);
+          async.waterfall([
+            async.constant(deviceInfo || '{}'),
+            async.asyncify(JSON.parse)
+          ], (error, info) => {
+            if (error) return console.log('Returned deviceInfo is not a valid JSON')
 
-			socket.destroy();
-		});
+            if (obj.topic === dataTopic) {
+              return plugin.pipe(info).then(() => {
+                socket.write(new Buffer(`Data Received. Device ID: ${obj.device}. Data: ${data}\n`))
 
-		socket.on('close', () => {
-			if (socket.device) {
-				platform.notifyDisconnection(socket.device);
-				delete clients[socket.device];
-			}
+                return plugin.log(JSON.stringify({
+                  title: 'TCP Gateway - Data Received.',
+                  device: obj.device,
+                  data: obj
+                }))
+              })
+            } else if (obj.topic === commandTopic) {
+              if (isEmpty(obj.device) || isEmpty(obj.command)) {
+                msgStr = 'Invalid message or command. Message must be a valid JSON String with "device" and "command" fields. "device" is a registered Device ID. "command" is the payload.'
+                plugin.logException(new Error(msgStr))
+                return socket.write(new Buffer(`${msgStr}\n`))
+              }
 
-			setTimeout(() => {
-				socket.removeAllListeners();
-			}, 5000);
-		});
+              plugin.relayCommand(obj.command, obj.device, obj.deviceGroup).then(() => {
+                socket.write(new Buffer(`Command Received. Device ID: ${obj.device}. Message: ${data}\n`))
+                return plugin.log(JSON.stringify({
+                  title: 'TCP Gateway - Message Sent.',
+                  device: obj.device,
+                  command: obj.command
+                }))
+              }).catch((err) => {
+                console.error(err)
+                plugin.logException(err)
+              })
+            } else {
+              msgStr = `Invalid topic specified. Topic: ${obj.topic}`
+              plugin.logException(new Error(msgStr))
+              socket.write(new Buffer(`${msgStr}\n`))
+            }
+          })
 
-		socket.on('data', (data) => {
-			async.waterfall([
-				async.constant(data || '{}'),
-				async.asyncify(JSON.parse)
-			], (error, obj) => {
-				if (error || isEmpty(obj.topic || isEmpty(obj.device))) {
-					socket.write(new Buffer('Invalid data sent. Data must be a valid JSON String with a "topic" field and a "device" field which corresponds to a registered Device ID.\n'));
-					return platform.handleException(new Error('Invalid data sent. Data must be a valid JSON String with a "topic" field and a "device" field which corresponds to a registered Device ID.'));
-				}
+          if (isEmpty(clients[obj.device])) {
+            socket.device = obj.device
+            clients[obj.device] = socket
+            return plugin.notifyConnection(obj.device)
+          }
+        }).catch((err) => {
+          console.error(err)
+          plugin.logException(err)
+        })
+      })
+    })
 
-				platform.requestDeviceInfo(obj.device, (error, requestId) => {
-					platform.once(requestId, (deviceInfo) => {
-						if (isEmpty(deviceInfo)) {
-							platform.log(JSON.stringify({
-								title: 'TCP Gateway - Access Denied. Unauthorized Device',
-								device: obj.device
-							}));
+    socket.write(new Buffer(`${connack}\n`))
+  })
 
-							socket.write(new Buffer(`Device not registered. Device ID: ${obj.device}\n`));
-							return socket.destroy();
-						}
+  server.listen(options.port)
+})
 
-						if (isEmpty(clients[obj.device])) {
-							platform.notifyConnection(obj.device);
-							socket.device = obj.device;
-							clients[obj.device] = socket;
-						}
+plugin.on('command', (msg) => {
+  if (!isEmpty(clients[msg.device])) {
+    let writeMsg = msg.command || new Buffer([0x00])
 
-						if (obj.topic === dataTopic) {
-							platform.processData(obj.device, data);
+    if (!Buffer.isBuffer(writeMsg)) {
+      writeMsg = new Buffer(`${writeMsg}\n`)
+    }
 
-							platform.log(JSON.stringify({
-								title: 'TCP Gateway - Data Received.',
-								device: obj.device,
-								data: obj
-							}));
+    clients[msg.device].write(writeMsg, () => {
+      plugin.sendCommandResponse(msg.commandId, 'Command Sent')
+      plugin.emit('response.ok')
 
-							socket.write(new Buffer(`Data Received. Device ID: ${obj.device}. Data: ${data}\n`));
-						}
-						else if (obj.topic === messageTopic) {
-							if (isEmpty(obj.target) || isEmpty(obj.message)) {
-								platform.handleException(new Error('Invalid message or command. Message must be a valid JSON String with "target" and "message" fields. "target" is a registered Device ID. "message" is the payload.'));
-								return socket.write(new Buffer('Invalid message or command. Message must be a valid JSON String with "target" and "message" fields. "target" is a registered Device ID. "message" is the payload.\n'));
-							}
+      plugin.log(JSON.stringify({
+        title: 'msg Gateway - Command Sent',
+        device: msg.device,
+        commandId: msg.commandId,
+        command: msg.command
+      }))
+    })
+  }
+})
 
-							platform.sendMessageToDevice(obj.target, obj.message);
-
-							platform.log(JSON.stringify({
-								title: 'TCP Gateway - Message Sent.',
-								source: obj.device,
-								target: obj.target,
-								message: obj.message
-							}));
-
-							socket.write(new Buffer(`Message Received. Device ID: ${obj.device}. Message: ${data}\n`));
-						}
-						else if (obj.topic === groupMessageTopic) {
-							if (isEmpty(obj.target) || isEmpty(obj.message)) {
-								platform.handleException(new Error('Invalid group message or command. Group messages must be a valid JSON String with "target" and "message" fields. "target" is a device group id or name. "message" is the payload.'));
-								return socket.write(new Buffer('Invalid group message or command. Group messages must be a valid JSON String with "target" and "message" fields. "target" is a device group id or name. "message" is the payload.\n'));
-							}
-
-							platform.sendMessageToGroup(obj.target, obj.message);
-
-							platform.log(JSON.stringify({
-								title: 'TCP Gateway - Group Message Sent.',
-								source: obj.device,
-								target: obj.target,
-								message: obj.message
-							}));
-
-							socket.write(new Buffer(`Group Message Received. Device ID: ${obj.device}. Message: ${data}\n`));
-						}
-						else {
-							platform.handleException(new Error(`Invalid topic specified. Topic: ${obj.topic}`));
-							socket.write(new Buffer(`Invalid topic specified. Topic: ${obj.topic}.\n`));
-						}
-					});
-				});
-			});
-		});
-
-		socket.write(new Buffer(`${connack}\n`));
-	});
-
-	server.listen(options.port);
-});
+module.exports = plugin

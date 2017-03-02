@@ -1,21 +1,15 @@
 {
-  "data_topic": {
+  "dataTopic": {
 	"type": "String",
 	"label": "Data Topic",
 	"default": "data",
 	"help": "(Optional) The topic to listen to for device data. Default: data"
   },
-  "message_topic": {
+  "commandTopic": {
 	"type": "String",
-	"label": "Message Topic",
-	"default": "messages",
-	"help": "(Optional) The topic to listen to for device messages or commands. Default: messages"
-  },
-  "groupmessage_topic": {
-	"type": "String",
-	"label": "Group Message Topic",
-	"default": "groupmessages",
-	"help": "(Optional) The topic to listen to for group messages or commands. Default: groupmessages"
+	"label": "Command Topic",
+	"default": "commands",
+	"help": "(Optional) The topic to listen to for device messages or commands. Default: commands"
   },
   "connack": {
 	"type": "String",
