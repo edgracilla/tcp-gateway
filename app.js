@@ -101,6 +101,12 @@ plugin.once('ready', () => {
           ], (error, info) => {
             if (error) return console.log('Returned deviceInfo is not a valid JSON')
 
+            if (isEmpty(clients[obj.device])) {
+              socket.device = obj.device
+              clients[obj.device] = socket
+              plugin.notifyConnection(obj.device)
+            }
+
             if (obj.topic === dataTopic) {
               return plugin.pipe(info).then(() => {
                 socket.write(new Buffer(`Data Received. Device ID: ${obj.device}. Data: ${data}\n`))
@@ -118,11 +124,12 @@ plugin.once('ready', () => {
                 return socket.write(new Buffer(`${msgStr}\n`))
               }
 
-              plugin.relayCommand(obj.command, obj.device, obj.deviceGroup).then(() => {
+              plugin.relayCommand(obj.command, obj.target, obj.deviceGroup, obj.device).then(() => {
                 socket.write(new Buffer(`Command Received. Device ID: ${obj.device}. Message: ${data}\n`))
                 return plugin.log(JSON.stringify({
                   title: 'TCP Gateway - Message Sent.',
-                  device: obj.device,
+                  source: obj.device,
+                  target: obj.target,
                   command: obj.command
                 }))
               }).catch((err) => {
@@ -135,12 +142,6 @@ plugin.once('ready', () => {
               socket.write(new Buffer(`${msgStr}\n`))
             }
           })
-
-          if (isEmpty(clients[obj.device])) {
-            socket.device = obj.device
-            clients[obj.device] = socket
-            return plugin.notifyConnection(obj.device)
-          }
         }).catch((err) => {
           console.error(err)
           plugin.logException(err)
@@ -155,6 +156,7 @@ plugin.once('ready', () => {
 })
 
 plugin.on('command', (msg) => {
+  // console.log(msg)
   if (!isEmpty(clients[msg.device])) {
     let writeMsg = msg.command || new Buffer([0x00])
 
@@ -164,7 +166,7 @@ plugin.on('command', (msg) => {
 
     clients[msg.device].write(writeMsg, () => {
       plugin.sendCommandResponse(msg.commandId, 'Command Sent')
-      plugin.emit('response.ok')
+      plugin.emit('response.ok', msg.device)
 
       plugin.log(JSON.stringify({
         title: 'msg Gateway - Command Sent',

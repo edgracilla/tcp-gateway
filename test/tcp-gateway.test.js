@@ -8,7 +8,6 @@ const should = require('should')
 const isEmpty = require('lodash.isempty')
 
 const CONNACK = 'CONNACK'
-const CLIENT_ID1 = '567827489028375'
 
 const Broker = require('../node_modules/reekoh/lib/broker.lib')
 
@@ -75,42 +74,6 @@ describe('TCP Gateway', () => {
     })
   })
 
-  describe('#test RPC preparation', () => {
-    it('should connect to broker', (done) => {
-      _broker.connect(BROKER).then(() => {
-        return done() || null
-      }).catch((err) => {
-        done(err)
-      })
-    })
-
-    it('should spawn temporary RPC server', (done) => {
-      // if request arrives this proc will be called
-      let sampleServerProcedure = (msg) => {
-        // console.log(msg.content.toString('utf8'))
-        return new Promise((resolve, reject) => {
-          async.waterfall([
-            async.constant(msg.content.toString('utf8')),
-            async.asyncify(JSON.parse)
-          ], (err, parsed) => {
-            if (err) return reject(err)
-            parsed.foo = 'bar'
-            resolve(JSON.stringify(parsed))
-          })
-        })
-      }
-
-      _broker.createRPC('server', 'deviceinfo').then((queue) => {
-        return queue.serverConsume(sampleServerProcedure)
-      }).then(() => {
-        // Awaiting RPC requests
-        done()
-      }).catch((err) => {
-        done(err)
-      })
-    })
-  })
-
   describe('#data', function () {
     it('should process the data', function (done) {
       this.timeout(10000)
@@ -122,62 +85,14 @@ describe('TCP Gateway', () => {
 
       _client.write(JSON.stringify({
         topic: 'data',
-        device: CLIENT_ID1
+        device: '567827489028375'
       }))
     })
   })
 
   describe('#command', function () {
-    it('should create commandRelay listener', function (done) {
-      this.timeout(10000)
 
-      let cmdRelays = `${COMMAND_RELAYS || ''}`.split(',').filter(Boolean)
-
-      async.each(cmdRelays, (cmdRelay, cb) => {
-        _channel.consume(cmdRelay, (msg) => {
-          if (!isEmpty(msg)) {
-            async.waterfall([
-              async.constant(msg.content.toString('utf8') || '{}'),
-              async.asyncify(JSON.parse)
-            ], (err, obj) => {
-              if (err) return console.log('parse json err. supplied invalid data')
-
-              let devices = []
-
-              if (Array.isArray(obj.devices)) {
-                devices = obj.devices
-              } else {
-                devices.push(obj.devices)
-              }
-
-              if (obj.deviceGroup) {
-                // get devices from platform agent
-                // then push to devices[]
-              }
-
-              async.each(devices, (device, cb) => {
-                _channel.publish('amq.topic', `${cmdRelay}.topic`, new Buffer(JSON.stringify({
-                  sequenceId: obj.sequenceId,
-                  commandId: new Date().getTime().toString(), // uniq
-                  command: obj.command,
-                  device: device
-                })))
-                cb()
-              }, (err) => {
-                should.ifError(err)
-              })
-            })
-          }
-          _channel.ack(msg)
-        }).then(() => {
-          return cb()
-        }).catch((err) => {
-          should.ifError(err)
-        })
-      }, done)
-    })
-
-    it('should be able to send command to device', function (done) {
+    it('should be able to send command (sent to offline device)', function (done) {
       this.timeout(10000)
 
       _client.once('data', function (data) {
@@ -187,15 +102,55 @@ describe('TCP Gateway', () => {
 
       _client.write(JSON.stringify({
         topic: 'command',
-        device: CLIENT_ID1,
+        device: '567827489028375',
+        target: '567827489028376', // <-- offline device
         deviceGroup: '',
-        command: 'TURNOFF'
+        command: 'TEST_OFFLINE_COMMAND'
       }))
     })
 
     it('should be able to recieve command response', function (done) {
       this.timeout(5000)
-      _app.once('response.ok', done)
+      let client3 = new net.Socket()
+
+      client3.connect(PORT, '127.0.0.1', function () {
+        client3.write(JSON.stringify({
+          topic: 'command',
+          device: '567827489028377',
+          target: '567827489028375',
+          deviceGroup: '',
+          command: 'TURNOFF'
+        }))
+
+        _app.on('response.ok', (device) => {
+          if (device === '567827489028375') done()
+        })
+      })
     })
+
+    // NOTE!!! below test requires device '567827489028376' to offline in mongo
+    // NOTE!!! below test requires device '567827489028376' to offline in mongo
+    // NOTE!!! below test requires device '567827489028376' to offline in mongo
+
+    it('should be able to recieve offline commands (on boot)', function (done) {
+      this.timeout(5000)
+      let client2 = new net.Socket()
+      let called = false
+
+      client2.connect(PORT, '127.0.0.1', function () {
+        _client.write(JSON.stringify({
+          topic: 'data',
+          device: '567827489028376'
+        }))
+
+        _app.on('response.ok', (device) => {
+          if (!called && device === '567827489028376') {
+            called = true
+            done()
+          }
+        })
+      })
+    })
+
   })
 })
