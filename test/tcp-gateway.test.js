@@ -3,13 +3,9 @@
 
 const net = require('net')
 const async = require('async')
-const amqp = require('amqplib')
 const should = require('should')
-const isEmpty = require('lodash.isempty')
 
 const CONNACK = 'CONNACK'
-
-const Broker = require('../node_modules/reekoh/lib/broker.lib')
 
 const PORT = 8182
 const PLUGIN_ID = 'demo.gateway'
@@ -18,9 +14,6 @@ const OUTPUT_PIPES = 'demo.outpipe1,demo.outpipe2'
 const COMMAND_RELAYS = 'demo.relay1,demo.relay2'
 
 let _app = null
-let _conn = null
-let _broker = null
-let _channel = null
 let _client = null
 
 let conf = {
@@ -37,21 +30,10 @@ describe('TCP Gateway', () => {
     process.env.OUTPUT_PIPES = OUTPUT_PIPES
     process.env.COMMAND_RELAYS = COMMAND_RELAYS
     process.env.CONFIG = JSON.stringify(conf)
-
-    _broker = new Broker()
-
-    amqp.connect(BROKER).then((conn) => {
-      _conn = conn
-      return conn.createChannel()
-    }).then((channel) => {
-      _channel = channel
-    }).catch((err) => {
-      console.log(err)
-    })
   })
 
   after('terminate', function () {
-    _conn.close()
+
   })
 
   describe('#start', function () {
@@ -129,9 +111,6 @@ describe('TCP Gateway', () => {
     })
 
     // NOTE!!! below test requires device '567827489028376' to offline in mongo
-    // NOTE!!! below test requires device '567827489028376' to offline in mongo
-    // NOTE!!! below test requires device '567827489028376' to offline in mongo
-
     it('should be able to recieve offline commands (on boot)', function (done) {
       this.timeout(5000)
       let client2 = new net.Socket()

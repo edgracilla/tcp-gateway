@@ -1,14 +1,17 @@
-FROM node
+FROM node:boron
 
 MAINTAINER Reekoh
 
-WORKDIR /home
+RUN apt-get update && apt-get install -y build-essential
 
-# copy files
-ADD . /home
+RUN mkdir -p /home/node/tcp-gateway
+COPY . /home/node/tcp-gateway
+
+WORKDIR /home/node/tcp-gateway
 
 # Install dependencies
-RUN npm install
+RUN npm install pm2 yarn -g
+RUN yarn install
 
 EXPOSE 8080
-CMD ["node", "app"]
+CMD ["pm2-docker", "--json", "app.yml"]

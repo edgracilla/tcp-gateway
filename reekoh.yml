@@ -1,0 +1,44 @@
+apiVersion: 1.0.0
+kind: Plugin
+metadata:
+  name: TCP Gateway
+  description: JSON TCP Gateway Plugin for the Reekoh IoT Platform
+  documentation: README.md
+  icon: asset/icon/reekoh200x200.png
+  signupLink: https://myservice.com/signup # ??
+  type: Storage
+  price: 0
+  tags:
+    - gateway
+    - tcp
+  config:
+    dataTopic:
+      label: Data Topic
+      type: String
+      maxLength: 1000
+      required: false
+      default: data
+      help: "(Optional) The topic to listen to for device data. Default: data."
+    commandTopic:
+      label: Command Topic
+      type: String
+      maxLength: 1000
+      required: false
+      default: commands
+      help: "(Optional) The topic to listen to for device messages or commands. Default: commands."
+    connack:
+      label: Connection ACK
+      type: String
+      maxLength: 1000
+      required: false
+      defautl: CONNACK
+      help: "(Optional) The welcome message to send to new device connections. Default: CONNACK."
+
+  loadBalancing:
+    method: http
+    enableSticky: true
+
+  release:
+    version: 1.0.0
+    notes: path/to/RELEASENOTESv1.0.0.md # ??
+    image: path/to/docker/image # ??
