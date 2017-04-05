@@ -156,7 +156,6 @@ plugin.once('ready', () => {
 })
 
 plugin.on('command', (msg) => {
-  // console.log(msg)
   if (!isEmpty(clients[msg.device])) {
     let writeMsg = msg.command || new Buffer([0x00])
 

@@ -5,20 +5,20 @@ const net = require('net')
 const async = require('async')
 const should = require('should')
 
-const CONNACK = 'CONNACK'
-
 const PORT = 8182
+const ACCOUNT = 'demo.account'
 const PLUGIN_ID = 'demo.gateway'
-const BROKER = 'amqp://guest:guest@127.0.0.1/'
 const OUTPUT_PIPES = 'demo.outpipe1,demo.outpipe2'
 const COMMAND_RELAYS = 'demo.relay1,demo.relay2'
+
+const BROKER = 'amqp://guest:guest@127.0.0.1/'
 
 let _app = null
 let _client = null
 
 let conf = {
   port: PORT,
-  connack: CONNACK,
+  connack: 'CONNACK',
   dataTopic: 'data',
   commandTopic: 'command'
 }
